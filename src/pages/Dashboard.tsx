@@ -10,7 +10,7 @@ import { isToday, parseISO, startOfMonth, isAfter } from 'date-fns';
 const softPop = {
   initial: { opacity: 0, y: 10, scale: 0.98 },
   animate: { opacity: 1, y: 0, scale: 1 },
-  transition: { duration: 0.3, ease: [0.34, 1.56, 0.64, 1] },
+  transition: { duration: 0.3, ease: [0.34, 1.56, 0.64, 1] as [number, number, number, number] },
 };
 
 export default function Dashboard() {
