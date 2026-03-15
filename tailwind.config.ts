@@ -7,12 +7,16 @@ export default {
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: "1rem",
       screens: {
         "2xl": "1400px",
       },
     },
     extend: {
+      fontFamily: {
+        display: ["Fraunces", "Georgia", "serif"],
+        body: ["Outfit", "system-ui", "sans-serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -57,33 +61,50 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        status: {
+          pendente: "hsl(var(--status-pendente))",
+          "pendente-fg": "hsl(var(--status-pendente-fg))",
+          producao: "hsl(var(--status-producao))",
+          "producao-fg": "hsl(var(--status-producao-fg))",
+          pronto: "hsl(var(--status-pronto))",
+          "pronto-fg": "hsl(var(--status-pronto-fg))",
+          entregue: "hsl(var(--status-entregue))",
+          "entregue-fg": "hsl(var(--status-entregue-fg))",
+          cancelado: "hsl(var(--status-cancelado))",
+          "cancelado-fg": "hsl(var(--status-cancelado-fg))",
+        },
       },
       borderRadius: {
+        card: "24px",
+        button: "12px",
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      boxShadow: {
+        soft: "var(--shadow-soft)",
+        card: "var(--shadow-card)",
+        "card-hover": "var(--shadow-hover)",
+        fab: "var(--shadow-fab)",
+      },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        "soft-pulse": {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.03)" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "soft-pulse": "soft-pulse 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
       },
     },
   },
