@@ -1,115 +1,244 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Product, Client, Sale, SaleItem, OrderStatus } from '@/types';
-
-function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
-}
-
-function loadFromStorage<T>(key: string, fallback: T): T {
-  try {
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function saveToStorage<T>(key: string, data: T) {
-  localStorage.setItem(key, JSON.stringify(data));
-}
 
 interface StoreContextType {
   // Products
   products: Product[];
-  addProduct: (p: Omit<Product, 'id'>) => void;
-  updateProduct: (id: string, p: Partial<Product>) => void;
-  deleteProduct: (id: string) => void;
+  addProduct: (p: Omit<Product, 'id'>) => Promise<void>;
+  updateProduct: (id: string, p: Partial<Product>) => Promise<void>;
+  deleteProduct: (id: string) => Promise<void>;
   getProduct: (id: string) => Product | undefined;
 
   // Clients
   clients: Client[];
-  addClient: (c: Omit<Client, 'id' | 'createdAt'>) => void;
-  updateClient: (id: string, c: Partial<Client>) => void;
-  deleteClient: (id: string) => void;
+  addClient: (c: Omit<Client, 'id' | 'createdAt'>) => Promise<void>;
+  updateClient: (id: string, c: Partial<Client>) => Promise<void>;
+  deleteClient: (id: string) => Promise<void>;
   getClient: (id: string) => Client | undefined;
 
   // Sales
   sales: Sale[];
-  addSale: (s: Omit<Sale, 'id' | 'orderDate'>) => void;
-  updateSale: (id: string, s: Partial<Sale>) => void;
-  updateSaleStatus: (id: string, status: OrderStatus) => void;
-  deleteSale: (id: string) => void;
+  addSale: (s: Omit<Sale, 'id' | 'orderDate'>) => Promise<void>;
+  updateSale: (id: string, s: Partial<Sale>) => Promise<void>;
+  updateSaleStatus: (id: string, status: OrderStatus) => Promise<void>;
+  deleteSale: (id: string) => Promise<void>;
   getSale: (id: string) => Sale | undefined;
   getClientSales: (clientId: string) => Sale[];
+
+  loading: boolean;
+  refresh: () => Promise<void>;
 }
 
 const StoreContext = createContext<StoreContextType | null>(null);
 
+function mapProduct(row: any): Product {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    price: Number(row.price),
+    photo: row.photo,
+    category: row.category,
+    active: row.active,
+    stock: row.stock ?? undefined,
+  };
+}
+
+function mapClient(row: any): Client {
+  return {
+    id: row.id,
+    name: row.name,
+    phone: row.phone,
+    notes: row.notes,
+    createdAt: row.created_at,
+  };
+}
+
+function mapSale(row: any, items: SaleItem[]): Sale {
+  return {
+    id: row.id,
+    clientId: row.client_id,
+    items,
+    total: Number(row.total),
+    orderDate: row.order_date,
+    deliveryDate: row.delivery_date || '',
+    status: row.status,
+    notes: row.notes,
+  };
+}
+
+function mapSaleItem(row: any): SaleItem {
+  return {
+    id: row.id,
+    productId: row.product_id,
+    quantity: row.quantity,
+    unitPrice: Number(row.unit_price),
+    subtotal: Number(row.subtotal),
+  };
+}
+
 export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const [products, setProducts] = useState<Product[]>(() => loadFromStorage('nany_products', []));
-  const [clients, setClients] = useState<Client[]>(() => loadFromStorage('nany_clients', []));
-  const [sales, setSales] = useState<Sale[]>(() => loadFromStorage('nany_sales', []));
+  const [products, setProducts] = useState<Product[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => saveToStorage('nany_products', products), [products]);
-  useEffect(() => saveToStorage('nany_clients', clients), [clients]);
-  useEffect(() => saveToStorage('nany_sales', sales), [sales]);
+  const fetchAll = useCallback(async () => {
+    setLoading(true);
+    const [prodRes, clientRes, saleRes, itemRes] = await Promise.all([
+      supabase.from('products').select('*').order('created_at', { ascending: false }),
+      supabase.from('clients').select('*').order('created_at', { ascending: false }),
+      supabase.from('sales').select('*').order('order_date', { ascending: false }),
+      supabase.from('sale_items').select('*'),
+    ]);
 
-  const addProduct = useCallback((p: Omit<Product, 'id'>) => {
-    setProducts(prev => [...prev, { ...p, id: generateId() }]);
+    setProducts((prodRes.data || []).map(mapProduct));
+    setClients((clientRes.data || []).map(mapClient));
+
+    const allItems = (itemRes.data || []).map(mapSaleItem);
+    const salesData = (saleRes.data || []).map(row => {
+      const items = allItems.filter(i => {
+        // sale_id is on the raw row, but mapSaleItem doesn't have it
+        const rawItem = (itemRes.data || []).find(r => r.id === i.id);
+        return rawItem?.sale_id === row.id;
+      });
+      return mapSale(row, items);
+    });
+    setSales(salesData);
+    setLoading(false);
   }, []);
 
-  const updateProduct = useCallback((id: string, p: Partial<Product>) => {
-    setProducts(prev => prev.map(item => item.id === id ? { ...item, ...p } : item));
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  // Products
+  const addProduct = useCallback(async (p: Omit<Product, 'id'>) => {
+    const { data, error } = await supabase.from('products').insert({
+      name: p.name,
+      description: p.description,
+      price: p.price,
+      photo: p.photo,
+      category: p.category,
+      active: p.active,
+      stock: p.stock ?? null,
+    }).select().single();
+    if (data) setProducts(prev => [mapProduct(data), ...prev]);
   }, []);
 
-  const deleteProduct = useCallback((id: string) => {
+  const updateProduct = useCallback(async (id: string, p: Partial<Product>) => {
+    const update: any = {};
+    if (p.name !== undefined) update.name = p.name;
+    if (p.description !== undefined) update.description = p.description;
+    if (p.price !== undefined) update.price = p.price;
+    if (p.photo !== undefined) update.photo = p.photo;
+    if (p.category !== undefined) update.category = p.category;
+    if (p.active !== undefined) update.active = p.active;
+    if (p.stock !== undefined) update.stock = p.stock;
+
+    const { data } = await supabase.from('products').update(update).eq('id', id).select().single();
+    if (data) setProducts(prev => prev.map(item => item.id === id ? mapProduct(data) : item));
+  }, []);
+
+  const deleteProduct = useCallback(async (id: string) => {
+    await supabase.from('products').delete().eq('id', id);
     setProducts(prev => prev.filter(item => item.id !== id));
   }, []);
 
   const getProduct = useCallback((id: string) => products.find(p => p.id === id), [products]);
 
-  const addClient = useCallback((c: Omit<Client, 'id' | 'createdAt'>) => {
-    setClients(prev => [...prev, { ...c, id: generateId(), createdAt: new Date().toISOString() }]);
+  // Clients
+  const addClient = useCallback(async (c: Omit<Client, 'id' | 'createdAt'>) => {
+    const { data } = await supabase.from('clients').insert({
+      name: c.name,
+      phone: c.phone,
+      notes: c.notes,
+    }).select().single();
+    if (data) setClients(prev => [mapClient(data), ...prev]);
   }, []);
 
-  const updateClient = useCallback((id: string, c: Partial<Client>) => {
-    setClients(prev => prev.map(item => item.id === id ? { ...item, ...c } : item));
+  const updateClient = useCallback(async (id: string, c: Partial<Client>) => {
+    const update: any = {};
+    if (c.name !== undefined) update.name = c.name;
+    if (c.phone !== undefined) update.phone = c.phone;
+    if (c.notes !== undefined) update.notes = c.notes;
+
+    const { data } = await supabase.from('clients').update(update).eq('id', id).select().single();
+    if (data) setClients(prev => prev.map(item => item.id === id ? mapClient(data) : item));
   }, []);
 
-  const deleteClient = useCallback((id: string) => {
+  const deleteClient = useCallback(async (id: string) => {
+    await supabase.from('clients').delete().eq('id', id);
     setClients(prev => prev.filter(item => item.id !== id));
   }, []);
 
   const getClient = useCallback((id: string) => clients.find(c => c.id === id), [clients]);
 
-  const addSale = useCallback((s: Omit<Sale, 'id' | 'orderDate'>) => {
-    const newSale: Sale = { ...s, id: generateId(), orderDate: new Date().toISOString() };
-    setSales(prev => [...prev, newSale]);
+  // Sales
+  const addSale = useCallback(async (s: Omit<Sale, 'id' | 'orderDate'>) => {
+    const { data: saleData } = await supabase.from('sales').insert({
+      client_id: s.clientId,
+      total: s.total,
+      delivery_date: s.deliveryDate || null,
+      status: s.status,
+      notes: s.notes,
+    }).select().single();
+
+    if (!saleData) return;
+
+    // Insert sale items
+    const itemsToInsert = s.items.map(item => ({
+      sale_id: saleData.id,
+      product_id: item.productId,
+      quantity: item.quantity,
+      unit_price: item.unitPrice,
+      subtotal: item.subtotal,
+    }));
+
+    const { data: itemsData } = await supabase.from('sale_items').insert(itemsToInsert).select();
+    const mappedItems = (itemsData || []).map(mapSaleItem);
+    setSales(prev => [mapSale(saleData, mappedItems), ...prev]);
+
     // Decrease stock
-    s.items.forEach(item => {
-      setProducts(prev => prev.map(p => {
-        if (p.id === item.productId && p.stock !== undefined) {
-          return { ...p, stock: Math.max(0, p.stock - item.quantity) };
+    for (const item of s.items) {
+      const product = products.find(p => p.id === item.productId);
+      if (product && product.stock !== undefined) {
+        const newStock = Math.max(0, product.stock - item.quantity);
+        await supabase.from('products').update({ stock: newStock }).eq('id', item.productId);
+        setProducts(prev => prev.map(p => p.id === item.productId ? { ...p, stock: newStock } : p));
+      }
+    }
+  }, [products]);
+
+  const updateSale = useCallback(async (id: string, s: Partial<Sale>) => {
+    const update: any = {};
+    if (s.clientId !== undefined) update.client_id = s.clientId;
+    if (s.total !== undefined) update.total = s.total;
+    if (s.deliveryDate !== undefined) update.delivery_date = s.deliveryDate || null;
+    if (s.status !== undefined) update.status = s.status;
+    if (s.notes !== undefined) update.notes = s.notes;
+
+    const { data } = await supabase.from('sales').update(update).eq('id', id).select().single();
+    if (data) {
+      setSales(prev => prev.map(item => {
+        if (item.id === id) {
+          return { ...item, ...s, clientId: data.client_id, orderDate: data.order_date, deliveryDate: data.delivery_date || '', status: data.status, total: Number(data.total), notes: data.notes };
         }
-        return p;
+        return item;
       }));
-    });
+    }
   }, []);
 
-  const updateSale = useCallback((id: string, s: Partial<Sale>) => {
-    setSales(prev => prev.map(item => item.id === id ? { ...item, ...s } : item));
-  }, []);
-
-  const updateSaleStatus = useCallback((id: string, status: OrderStatus) => {
+  const updateSaleStatus = useCallback(async (id: string, status: OrderStatus) => {
+    await supabase.from('sales').update({ status }).eq('id', id);
     setSales(prev => prev.map(item => item.id === id ? { ...item, status } : item));
   }, []);
 
-  const deleteSale = useCallback((id: string) => {
+  const deleteSale = useCallback(async (id: string) => {
+    await supabase.from('sales').delete().eq('id', id);
     setSales(prev => prev.filter(item => item.id !== id));
   }, []);
 
   const getSale = useCallback((id: string) => sales.find(s => s.id === id), [sales]);
-
   const getClientSales = useCallback((clientId: string) => sales.filter(s => s.clientId === clientId), [sales]);
 
   return (
@@ -117,6 +246,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       products, addProduct, updateProduct, deleteProduct, getProduct,
       clients, addClient, updateClient, deleteClient, getClient,
       sales, addSale, updateSale, updateSaleStatus, deleteSale, getSale, getClientSales,
+      loading, refresh: fetchAll,
     }}>
       {children}
     </StoreContext.Provider>
