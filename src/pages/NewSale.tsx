@@ -78,22 +78,18 @@ export default function NewSale() {
     setItems(prev => prev.filter(i => i.productId !== productId));
   }
 
-  function handleQuickClient() {
+  async function handleQuickClient() {
     if (!quickClientForm.name.trim()) { toast.error('Informe o nome'); return; }
-    addClient(quickClientForm);
-    // Find the newly added client (last one)
-    setTimeout(() => {
-      const newest = clients[clients.length]; // Won't work due to timing
-    }, 0);
+    await addClient(quickClientForm);
     setQuickClientOpen(false);
     toast.success('Cliente cadastrado! 💕');
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!selectedClientId) { toast.error('Selecione um cliente'); return; }
     if (items.length === 0) { toast.error('Adicione pelo menos um produto'); return; }
 
-    addSale({
+    await addSale({
       clientId: selectedClientId,
       items,
       total,
