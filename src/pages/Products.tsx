@@ -39,22 +39,22 @@ export default function Products() {
     setDialogOpen(true);
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.name.trim()) { toast.error('Informe o nome do produto'); return; }
     if (form.price <= 0) { toast.error('Informe um preço válido'); return; }
 
     if (editing) {
-      updateProduct(editing.id, form);
+      await updateProduct(editing.id, form);
       toast.success('Produto atualizado!');
     } else {
-      addProduct(form);
+      await addProduct(form);
       toast.success('Produto cadastrado com carinho! 🧁');
     }
     setDialogOpen(false);
   }
 
-  function handleDelete(id: string) {
-    deleteProduct(id);
+  async function handleDelete(id: string) {
+    await deleteProduct(id);
     toast.success('Produto removido');
   }
 

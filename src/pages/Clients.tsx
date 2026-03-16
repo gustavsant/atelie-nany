@@ -38,20 +38,20 @@ export default function Clients() {
     setDialogOpen(true);
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.name.trim()) { toast.error('Informe o nome do cliente'); return; }
     if (editing) {
-      updateClient(editing.id, form);
+      await updateClient(editing.id, form);
       toast.success('Cliente atualizado!');
     } else {
-      addClient(form);
+      await addClient(form);
       toast.success('Cliente cadastrado! 💕');
     }
     setDialogOpen(false);
   }
 
-  function handleDelete(id: string) {
-    deleteClient(id);
+  async function handleDelete(id: string) {
+    await deleteClient(id);
     toast.success('Cliente removido');
     if (detailClient?.id === id) setDetailClient(null);
   }

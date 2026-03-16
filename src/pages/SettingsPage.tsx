@@ -1,10 +1,11 @@
 import { useStore } from '@/store/useStore';
 import { exportToCSV } from '@/lib/formatters';
-import { Download, Trash2, Settings as SettingsIcon } from 'lucide-react';
+import { Download, Trash2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function SettingsPage() {
-  const { clients, sales, getClient } = useStore();
+  const { clients, sales, getClient, refresh } = useStore();
 
   function exportClients() {
     const data = clients.map(c => ({
@@ -29,12 +30,14 @@ export default function SettingsPage() {
     toast.success('Vendas exportadas! 📄');
   }
 
-  function clearAll() {
+  async function clearAll() {
     if (confirm('Tem certeza que deseja apagar todos os dados? Esta ação não pode ser desfeita.')) {
-      localStorage.removeItem('nany_products');
-      localStorage.removeItem('nany_clients');
-      localStorage.removeItem('nany_sales');
-      window.location.reload();
+      await supabase.from('sale_items').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('sales').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('products').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('clients').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await refresh();
+      toast.success('Todos os dados foram apagados.');
     }
   }
 
@@ -59,7 +62,7 @@ export default function SettingsPage() {
         <h2 className="font-display text-lg font-semibold">Sobre</h2>
         <div className="text-sm text-muted-foreground space-y-1">
           <p>Ateliê Nany Souza - Sistema de Gestão</p>
-          <p>Versão 1.0</p>
+          <p>Versão 2.0 · Dados na nuvem ☁️</p>
         </div>
       </div>
 

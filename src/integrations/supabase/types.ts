@@ -14,7 +14,149 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clients: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          notes: string
+          phone: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string
+          phone?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string
+          phone?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          active: boolean
+          category: Database["public"]["Enums"]["product_category"]
+          created_at: string
+          description: string
+          id: string
+          name: string
+          photo: string
+          price: number
+          stock: number | null
+        }
+        Insert: {
+          active?: boolean
+          category?: Database["public"]["Enums"]["product_category"]
+          created_at?: string
+          description?: string
+          id?: string
+          name: string
+          photo?: string
+          price?: number
+          stock?: number | null
+        }
+        Update: {
+          active?: boolean
+          category?: Database["public"]["Enums"]["product_category"]
+          created_at?: string
+          description?: string
+          id?: string
+          name?: string
+          photo?: string
+          price?: number
+          stock?: number | null
+        }
+        Relationships: []
+      }
+      sale_items: {
+        Row: {
+          id: string
+          product_id: string
+          quantity: number
+          sale_id: string
+          subtotal: number
+          unit_price: number
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          quantity?: number
+          sale_id: string
+          subtotal?: number
+          unit_price?: number
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          quantity?: number
+          sale_id?: string
+          subtotal?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_items_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales: {
+        Row: {
+          client_id: string
+          created_at: string
+          delivery_date: string | null
+          id: string
+          notes: string
+          order_date: string
+          status: Database["public"]["Enums"]["order_status"]
+          total: number
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          delivery_date?: string | null
+          id?: string
+          notes?: string
+          order_date?: string
+          status?: Database["public"]["Enums"]["order_status"]
+          total?: number
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          delivery_date?: string | null
+          id?: string
+          notes?: string
+          order_date?: string
+          status?: Database["public"]["Enums"]["order_status"]
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +165,13 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      order_status:
+        | "pendente"
+        | "em_producao"
+        | "pronto"
+        | "entregue"
+        | "cancelado"
+      product_category: "bolos" | "doces" | "kits" | "encomendas" | "outros"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +298,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      order_status: [
+        "pendente",
+        "em_producao",
+        "pronto",
+        "entregue",
+        "cancelado",
+      ],
+      product_category: ["bolos", "doces", "kits", "encomendas", "outros"],
+    },
   },
 } as const
