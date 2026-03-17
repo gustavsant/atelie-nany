@@ -140,25 +140,25 @@ export default function AppLayout({ children }: {children: React.ReactNode;}) {
         </main>
 
         {/* Mobile Bottom Nav */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t border-border/50 z-30 px-2 py-1 safe-area-pb">
-          <div className="flex items-center justify-around">
-            {mobileNavItems.map((item) => {
-              const active = location.pathname === item.path;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`flex flex-col items-center gap-0.5 py-2 px-3 rounded-lg text-xs transition-colors ${
-                  active ? 'text-foreground' : 'text-muted-foreground'}`
-                  }>
-                  
-                  <item.icon className="w-5 h-5" strokeWidth={active ? 2 : 1.5} />
-                  <span className="font-medium">{item.label}</span>
-                </Link>);
+        
 
-            })}
-          </div>
-        </nav>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
 
         {/* FAB - Mobile */}
         
