@@ -40,6 +40,7 @@ const App = () => (
               <Route path="/nova-venda" element={<NewSale />} />
               <Route path="/entregas" element={<DeliverySchedule />} />
               <Route path="/configuracoes" element={<SettingsPage />} />
+              <Route path="/comanda" element={<OrderReceipt />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AppLayout>

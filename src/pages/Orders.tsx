@@ -128,16 +128,25 @@ export default function Orders() {
                     <div className="text-right flex flex-col items-end gap-2">
                       <p className="font-semibold text-sm tabular-nums">{formatCurrency(sale.total)}</p>
                       <StatusBadge status={sale.status} />
-                      <Select value={sale.status} onValueChange={(v: OrderStatus) => handleStatusChange(sale.id, v)}>
-                        <SelectTrigger className="h-7 text-xs rounded-full border-border/50 w-auto min-w-[100px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                            <SelectItem key={k} value={k}>{v}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => window.open(`/comanda?id=${sale.id}`, '_blank')}
+                          className="w-7 h-7 rounded-full hover:bg-muted/50 flex items-center justify-center transition-colors"
+                          title="Imprimir comanda"
+                        >
+                          <Printer className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+                        </button>
+                        <Select value={sale.status} onValueChange={(v: OrderStatus) => handleStatusChange(sale.id, v)}>
+                          <SelectTrigger className="h-7 text-xs rounded-full border-border/50 w-auto min-w-[100px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                              <SelectItem key={k} value={k}>{v}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
