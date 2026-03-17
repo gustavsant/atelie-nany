@@ -111,8 +111,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetchAll(true);
-    const interval = setInterval(() => fetchAll(false), 5000);
-    return () => clearInterval(interval);
+
+    const channel = supabase
+      .channel('store-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => fetchAll(false))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => fetchAll(false))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, () => fetchAll(false))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sale_items' }, () => fetchAll(false))
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchAll]);
 
   // Products
