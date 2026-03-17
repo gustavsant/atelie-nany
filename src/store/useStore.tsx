@@ -110,8 +110,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    fetchAll();
-    const interval = setInterval(fetchAll, 5000);
+    fetchAll(true);
+    const interval = setInterval(() => fetchAll(false), 5000);
     return () => clearInterval(interval);
   }, [fetchAll]);
 
