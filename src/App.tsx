@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Outlet } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { StoreProvider } from "@/store/useStore";
@@ -33,20 +33,16 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/comanda" element={<OrderReceipt />} />
-            <Route path="*" element={
-              <AppLayout>
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/produtos" element={<Products />} />
-                  <Route path="/clientes" element={<Clients />} />
-                  <Route path="/pedidos" element={<Orders />} />
-                  <Route path="/nova-venda" element={<NewSale />} />
-                  <Route path="/entregas" element={<DeliverySchedule />} />
-                  <Route path="/configuracoes" element={<SettingsPage />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </AppLayout>
-            } />
+            <Route element={<AppLayout><Outlet /></AppLayout>}>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/produtos" element={<Products />} />
+              <Route path="/clientes" element={<Clients />} />
+              <Route path="/pedidos" element={<Orders />} />
+              <Route path="/nova-venda" element={<NewSale />} />
+              <Route path="/entregas" element={<DeliverySchedule />} />
+              <Route path="/configuracoes" element={<SettingsPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
           </Routes>
         </BrowserRouter>
       </StoreProvider>
