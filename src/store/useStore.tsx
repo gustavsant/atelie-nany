@@ -120,8 +120,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sale_items' }, () => fetchAll(false))
       .subscribe();
 
+    // Re-sync when tab/app regains focus (mobile browsers kill websockets in background)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchAll(false);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', () => fetchAll(false));
+
     return () => {
       supabase.removeChannel(channel);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', () => fetchAll(false));
     };
   }, [fetchAll]);
 
