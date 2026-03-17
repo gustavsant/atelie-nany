@@ -109,7 +109,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => {
+    fetchAll();
+    const interval = setInterval(fetchAll, 5000);
+    return () => clearInterval(interval);
+  }, [fetchAll]);
 
   // Products
   const addProduct = useCallback(async (p: Omit<Product, 'id'>) => {
