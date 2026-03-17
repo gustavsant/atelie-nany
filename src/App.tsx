@@ -11,6 +11,7 @@ import Orders from "@/pages/Orders";
 import NewSale from "@/pages/NewSale";
 import DeliverySchedule from "@/pages/DeliverySchedule";
 import SettingsPage from "@/pages/SettingsPage";
+import OrderReceipt from "@/pages/OrderReceipt";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
