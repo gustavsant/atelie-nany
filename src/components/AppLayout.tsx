@@ -76,20 +76,20 @@ export default function AppLayout({ children }: {children: React.ReactNode;}) {
 
       {/* Mobile Header */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border/50 bg-card/80 backdrop-blur-sm sticky top-0 z-30">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-              <Cake className="w-4 h-4 text-primary" strokeWidth={1.5} />
-            </div>
-            <span className="font-display font-semibold text-base">Ateliê Nany Souza</span>
-          </div>
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-button hover:bg-muted/50 transition-colors">
-            
-            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </header>
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
 
         {/* Mobile Slide Menu */}
         <AnimatePresence>
