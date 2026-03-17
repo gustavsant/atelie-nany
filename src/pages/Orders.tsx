@@ -3,7 +3,7 @@ import { useStore } from '@/store/useStore';
 import { OrderStatus, STATUS_LABELS } from '@/types';
 import { formatCurrency, formatDate } from '@/lib/formatters';
 import StatusBadge from '@/components/StatusBadge';
-import { ClipboardList, Search, Filter, Download } from 'lucide-react';
+import { ClipboardList, Search, Filter, Download, Printer } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { motion, AnimatePresence } from 'framer-motion';
