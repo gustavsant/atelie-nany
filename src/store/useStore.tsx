@@ -84,8 +84,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchAll = useCallback(async () => {
-    setLoading(true);
+  const fetchAll = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     const [prodRes, clientRes, saleRes, itemRes] = await Promise.all([
       supabase.from('products').select('*').order('created_at', { ascending: false }),
       supabase.from('clients').select('*').order('created_at', { ascending: false }),
@@ -109,7 +109,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => {
+    fetchAll(true);
+    const interval = setInterval(() => fetchAll(false), 5000);
+    return () => clearInterval(interval);
+  }, [fetchAll]);
 
   // Products
   const addProduct = useCallback(async (p: Omit<Product, 'id'>) => {
