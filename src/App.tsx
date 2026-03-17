@@ -33,20 +33,16 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/comanda" element={<OrderReceipt />} />
-            <Route path="*" element={
-              <AppLayout>
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/produtos" element={<Products />} />
-                  <Route path="/clientes" element={<Clients />} />
-                  <Route path="/pedidos" element={<Orders />} />
-                  <Route path="/nova-venda" element={<NewSale />} />
-                  <Route path="/entregas" element={<DeliverySchedule />} />
-                  <Route path="/configuracoes" element={<SettingsPage />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </AppLayout>
-            } />
+            <Route element={<AppLayout><Outlet /></AppLayout>}>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/produtos" element={<Products />} />
+              <Route path="/clientes" element={<Clients />} />
+              <Route path="/pedidos" element={<Orders />} />
+              <Route path="/nova-venda" element={<NewSale />} />
+              <Route path="/entregas" element={<DeliverySchedule />} />
+              <Route path="/configuracoes" element={<SettingsPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
           </Routes>
         </BrowserRouter>
       </StoreProvider>
