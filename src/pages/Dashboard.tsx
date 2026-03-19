@@ -95,7 +95,7 @@ export default function Dashboard() {
       >
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-display text-lg font-semibold">Próximas entregas</h2>
-          <Link to="/entregas" className="text-sm text-primary font-medium flex items-center gap-1 hover:underline">
+          <Link to="/admin/entregas" className="text-sm text-primary font-medium flex items-center gap-1 hover:underline">
             Ver todas <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
