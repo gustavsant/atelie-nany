@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   Cake,
+  LogOut,
 } from 'lucide-react';
 import EasterDoodles from './EasterDoodles';
 
