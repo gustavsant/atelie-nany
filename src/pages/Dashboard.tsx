@@ -137,7 +137,7 @@ export default function Dashboard() {
       {/* Quick Stats */}
       <div className="grid grid-cols-2 gap-3">
         <Link
-          to="/produtos"
+          to="/admin/produtos"
           className="bg-card rounded-card p-4 shadow-card hover:shadow-card-hover transition-all duration-200 flex items-center gap-3"
         >
           <div className="w-10 h-10 rounded-button bg-secondary flex items-center justify-center">
