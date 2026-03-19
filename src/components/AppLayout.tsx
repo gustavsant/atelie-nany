@@ -165,7 +165,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* FAB - Mobile */}
         <Link
           to="/nova-venda"
-          className="md:hidden fixed bottom-20 right-4 z-30 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-fab flex items-center justify-center active:scale-95 transition-transform"
+          className="md:hidden fixed bottom-20 right-4 z-30 w-14 h-14 rounded-full bg-sage text-sage-foreground shadow-fab flex items-center justify-center active:scale-95 transition-transform"
         >
           <Plus className="w-6 h-6" strokeWidth={2} />
         </Link>
