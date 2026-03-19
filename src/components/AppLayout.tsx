@@ -68,7 +68,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="p-4">
           <Link
             to="/nova-venda"
-            className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-primary text-primary-foreground rounded-button font-medium text-sm shadow-soft hover:shadow-card-hover transition-all duration-200 hover:-translate-y-0.5"
+            className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-sage text-sage-foreground rounded-button font-medium text-sm shadow-soft hover:shadow-card-hover transition-all duration-200 hover:-translate-y-0.5"
           >
             <Plus className="w-4 h-4" strokeWidth={2} />
             Nova Venda
