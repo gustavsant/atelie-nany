@@ -112,7 +112,7 @@ export default function Dashboard() {
               return (
                 <Link
                   key={sale.id}
-                  to={`/pedidos`}
+                  to={`/admin/pedidos`}
                   className="flex items-center justify-between bg-card rounded-card p-4 shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200"
                 >
                   <div className="min-w-0 flex-1">
