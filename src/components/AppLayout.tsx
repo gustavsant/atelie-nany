@@ -80,8 +80,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col min-w-0">
         <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border/50 bg-card/80 backdrop-blur-sm sticky top-0 z-30">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-              <Cake className="w-4 h-4 text-primary" strokeWidth={1.5} />
+            <div className="w-8 h-8 rounded-full bg-sage/20 flex items-center justify-center">
+              <Cake className="w-4 h-4 text-sage" strokeWidth={1.5} />
             </div>
             <span className="font-display font-semibold text-base">Ateliê Nany Souza</span>
           </div>
