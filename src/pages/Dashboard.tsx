@@ -149,7 +149,7 @@ export default function Dashboard() {
           </div>
         </Link>
         <Link
-          to="/clientes"
+          to="/admin/clientes"
           className="bg-card rounded-card p-4 shadow-card hover:shadow-card-hover transition-all duration-200 flex items-center gap-3"
         >
           <div className="w-10 h-10 rounded-button bg-accent flex items-center justify-center">
