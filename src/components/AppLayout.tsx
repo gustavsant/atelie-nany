@@ -30,7 +30,14 @@ const mobileNavItems = navItems.slice(0, 5);
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/admin/login');
+  };
 
   return (
     <div className="min-h-screen bg-background flex relative">
