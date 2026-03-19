@@ -16,12 +16,12 @@ import {
 import EasterDoodles from './EasterDoodles';
 
 const navItems = [
-  { label: 'Início', icon: LayoutDashboard, path: '/' },
-  { label: 'Produtos', icon: ShoppingBag, path: '/produtos' },
-  { label: 'Clientes', icon: Users, path: '/clientes' },
-  { label: 'Pedidos', icon: ClipboardList, path: '/pedidos' },
-  { label: 'Entregas', icon: CalendarDays, path: '/entregas' },
-  { label: 'Configurações', icon: Settings, path: '/configuracoes' },
+  { label: 'Início', icon: LayoutDashboard, path: '/admin' },
+  { label: 'Produtos', icon: ShoppingBag, path: '/admin/produtos' },
+  { label: 'Clientes', icon: Users, path: '/admin/clientes' },
+  { label: 'Pedidos', icon: ClipboardList, path: '/admin/pedidos' },
+  { label: 'Entregas', icon: CalendarDays, path: '/admin/entregas' },
+  { label: 'Configurações', icon: Settings, path: '/admin/configuracoes' },
 ];
 
 const mobileNavItems = navItems.slice(0, 5);
