@@ -74,7 +74,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="p-4">
+        <div className="p-4 space-y-2">
           <Link
             to="/admin/nova-venda"
             className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-sage text-sage-foreground rounded-button font-medium text-sm shadow-soft hover:shadow-card-hover transition-all duration-200 hover:-translate-y-0.5"
@@ -82,6 +82,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <Plus className="w-4 h-4" strokeWidth={2} />
             Nova Venda
           </Link>
+          <button
+            onClick={handleLogout}
+            className="flex items-center justify-center gap-2 w-full py-2.5 px-4 text-muted-foreground hover:text-foreground rounded-button text-sm font-medium hover:bg-muted/50 transition-all"
+          >
+            <LogOut className="w-4 h-4" strokeWidth={1.5} />
+            Sair
+          </button>
         </div>
       </aside>
 
