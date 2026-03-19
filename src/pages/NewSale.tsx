@@ -99,7 +99,7 @@ export default function NewSale() {
     });
 
     toast.success('Venda registrada com carinho! 🧁');
-    navigate('/pedidos');
+    navigate('/admin/pedidos');
   }
 
   return (

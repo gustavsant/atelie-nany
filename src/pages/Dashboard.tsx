@@ -95,7 +95,7 @@ export default function Dashboard() {
       >
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-display text-lg font-semibold">Próximas entregas</h2>
-          <Link to="/entregas" className="text-sm text-primary font-medium flex items-center gap-1 hover:underline">
+          <Link to="/admin/entregas" className="text-sm text-primary font-medium flex items-center gap-1 hover:underline">
             Ver todas <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -112,7 +112,7 @@ export default function Dashboard() {
               return (
                 <Link
                   key={sale.id}
-                  to={`/pedidos`}
+                  to={`/admin/pedidos`}
                   className="flex items-center justify-between bg-card rounded-card p-4 shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200"
                 >
                   <div className="min-w-0 flex-1">
@@ -137,7 +137,7 @@ export default function Dashboard() {
       {/* Quick Stats */}
       <div className="grid grid-cols-2 gap-3">
         <Link
-          to="/produtos"
+          to="/admin/produtos"
           className="bg-card rounded-card p-4 shadow-card hover:shadow-card-hover transition-all duration-200 flex items-center gap-3"
         >
           <div className="w-10 h-10 rounded-button bg-secondary flex items-center justify-center">
@@ -149,7 +149,7 @@ export default function Dashboard() {
           </div>
         </Link>
         <Link
-          to="/clientes"
+          to="/admin/clientes"
           className="bg-card rounded-card p-4 shadow-card hover:shadow-card-hover transition-all duration-200 flex items-center gap-3"
         >
           <div className="w-10 h-10 rounded-button bg-accent flex items-center justify-center">

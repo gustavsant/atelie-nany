@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
@@ -12,23 +13,31 @@ import {
   Menu,
   X,
   Cake,
+  LogOut,
 } from 'lucide-react';
 import EasterDoodles from './EasterDoodles';
 
 const navItems = [
-  { label: 'Início', icon: LayoutDashboard, path: '/' },
-  { label: 'Produtos', icon: ShoppingBag, path: '/produtos' },
-  { label: 'Clientes', icon: Users, path: '/clientes' },
-  { label: 'Pedidos', icon: ClipboardList, path: '/pedidos' },
-  { label: 'Entregas', icon: CalendarDays, path: '/entregas' },
-  { label: 'Configurações', icon: Settings, path: '/configuracoes' },
+  { label: 'Início', icon: LayoutDashboard, path: '/admin' },
+  { label: 'Produtos', icon: ShoppingBag, path: '/admin/produtos' },
+  { label: 'Clientes', icon: Users, path: '/admin/clientes' },
+  { label: 'Pedidos', icon: ClipboardList, path: '/admin/pedidos' },
+  { label: 'Entregas', icon: CalendarDays, path: '/admin/entregas' },
+  { label: 'Configurações', icon: Settings, path: '/admin/configuracoes' },
 ];
 
 const mobileNavItems = navItems.slice(0, 5);
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/admin/login');
+  };
 
   return (
     <div className="min-h-screen bg-background flex relative">
@@ -65,14 +74,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="p-4">
+        <div className="p-4 space-y-2">
           <Link
-            to="/nova-venda"
+            to="/admin/nova-venda"
             className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-sage text-sage-foreground rounded-button font-medium text-sm shadow-soft hover:shadow-card-hover transition-all duration-200 hover:-translate-y-0.5"
           >
             <Plus className="w-4 h-4" strokeWidth={2} />
             Nova Venda
           </Link>
+          <button
+            onClick={handleLogout}
+            className="flex items-center justify-center gap-2 w-full py-2.5 px-4 text-muted-foreground hover:text-foreground rounded-button text-sm font-medium hover:bg-muted/50 transition-all"
+          >
+            <LogOut className="w-4 h-4" strokeWidth={1.5} />
+            Sair
+          </button>
         </div>
       </aside>
 
@@ -164,7 +180,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* FAB - Mobile */}
         <Link
-          to="/nova-venda"
+          to="/admin/nova-venda"
           className="md:hidden fixed bottom-20 right-4 z-30 w-14 h-14 rounded-full bg-sage text-sage-foreground shadow-fab flex items-center justify-center active:scale-95 transition-transform"
         >
           <Plus className="w-6 h-6" strokeWidth={2} />
