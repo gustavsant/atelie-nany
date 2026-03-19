@@ -13,6 +13,7 @@ import {
   X,
   Cake,
 } from 'lucide-react';
+import EasterDoodles from './EasterDoodles';
 
 const navItems = [
   { label: 'Início', icon: LayoutDashboard, path: '/' },
