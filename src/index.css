@@ -49,6 +49,12 @@
     --shadow-hover: 0 10px 25px -5px rgba(219, 112, 147, 0.12);
     --shadow-fab: 0 8px 24px rgba(219, 112, 147, 0.3);
 
+    /* Sage green accent */
+    --sage: 90 30% 45%;
+    --sage-foreground: 0 0% 100%;
+    --sage-light: 90 35% 90%;
+    --sage-muted: 90 25% 80%;
+
     /* Status colors */
     --status-pendente: 45 90% 88%;
     --status-pendente-fg: 35 60% 35%;
