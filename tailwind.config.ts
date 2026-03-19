@@ -61,6 +61,12 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        sage: {
+          DEFAULT: "hsl(var(--sage))",
+          foreground: "hsl(var(--sage-foreground))",
+          light: "hsl(var(--sage-light))",
+          muted: "hsl(var(--sage-muted))",
+        },
         status: {
           pendente: "hsl(var(--status-pendente))",
           "pendente-fg": "hsl(var(--status-pendente-fg))",

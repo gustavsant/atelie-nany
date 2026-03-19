@@ -13,6 +13,7 @@ import {
   X,
   Cake,
 } from 'lucide-react';
+import EasterDoodles from './EasterDoodles';
 
 const navItems = [
   { label: 'Início', icon: LayoutDashboard, path: '/' },
@@ -30,12 +31,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex relative">
+      <EasterDoodles />
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-64 border-r border-border/50 bg-card/50 backdrop-blur-sm">
         <div className="p-6 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-            <Cake className="w-5 h-5 text-primary" strokeWidth={1.5} />
+          <div className="w-10 h-10 rounded-full bg-sage/20 flex items-center justify-center">
+            <Cake className="w-5 h-5 text-sage" strokeWidth={1.5} />
           </div>
           <div>
             <h1 className="font-display text-lg font-semibold leading-tight">Ateliê</h1>
@@ -66,7 +68,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="p-4">
           <Link
             to="/nova-venda"
-            className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-primary text-primary-foreground rounded-button font-medium text-sm shadow-soft hover:shadow-card-hover transition-all duration-200 hover:-translate-y-0.5"
+            className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-sage text-sage-foreground rounded-button font-medium text-sm shadow-soft hover:shadow-card-hover transition-all duration-200 hover:-translate-y-0.5"
           >
             <Plus className="w-4 h-4" strokeWidth={2} />
             Nova Venda
@@ -78,8 +80,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col min-w-0">
         <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border/50 bg-card/80 backdrop-blur-sm sticky top-0 z-30">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-              <Cake className="w-4 h-4 text-primary" strokeWidth={1.5} />
+            <div className="w-8 h-8 rounded-full bg-sage/20 flex items-center justify-center">
+              <Cake className="w-4 h-4 text-sage" strokeWidth={1.5} />
             </div>
             <span className="font-display font-semibold text-base">Ateliê Nany Souza</span>
           </div>
@@ -163,7 +165,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* FAB - Mobile */}
         <Link
           to="/nova-venda"
-          className="md:hidden fixed bottom-20 right-4 z-30 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-fab flex items-center justify-center active:scale-95 transition-transform"
+          className="md:hidden fixed bottom-20 right-4 z-30 w-14 h-14 rounded-full bg-sage text-sage-foreground shadow-fab flex items-center justify-center active:scale-95 transition-transform"
         >
           <Plus className="w-6 h-6" strokeWidth={2} />
         </Link>
