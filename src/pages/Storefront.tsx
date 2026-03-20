@@ -126,8 +126,8 @@ export default function Storefront() {
   }
 
   return (
-    <div className="min-h-screen bg-background relative">
-      <EasterDoodles />
+    <div className="min-h-screen relative" style={{ backgroundColor: 'hsl(340, 80%, 96%)' }}>
+      <StorefrontDoodles />
 
       {/* Header */}
       <header className="sticky top-0 z-30 bg-card/95 backdrop-blur-md border-b border-border/50">
