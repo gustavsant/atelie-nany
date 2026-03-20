@@ -1,23 +1,20 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Product, Client, Sale, SaleItem, OrderStatus } from '@/types';
+import { Product, ProductVariant, Client, Sale, SaleItem, OrderStatus } from '@/types';
 
 interface StoreContextType {
-  // Products
   products: Product[];
   addProduct: (p: Omit<Product, 'id'>) => Promise<void>;
   updateProduct: (id: string, p: Partial<Product>) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   getProduct: (id: string) => Product | undefined;
 
-  // Clients
   clients: Client[];
   addClient: (c: Omit<Client, 'id' | 'createdAt'>) => Promise<void>;
   updateClient: (id: string, c: Partial<Client>) => Promise<void>;
   deleteClient: (id: string) => Promise<void>;
   getClient: (id: string) => Client | undefined;
 
-  // Sales
   sales: Sale[];
   addSale: (s: Omit<Sale, 'id' | 'orderDate'>) => Promise<void>;
   updateSale: (id: string, s: Partial<Sale>) => Promise<void>;
@@ -32,49 +29,36 @@ interface StoreContextType {
 
 const StoreContext = createContext<StoreContextType | null>(null);
 
-function mapProduct(row: any): Product {
+function mapVariant(row: any): ProductVariant {
+  return { id: row.id, productId: row.product_id, name: row.name, price: Number(row.price) };
+}
+
+function mapProduct(row: any, variants: ProductVariant[] = []): Product {
   return {
-    id: row.id,
-    name: row.name,
-    description: row.description,
-    price: Number(row.price),
-    photo: row.photo,
-    category: row.category,
-    active: row.active,
-    stock: row.stock ?? undefined,
+    id: row.id, name: row.name, description: row.description,
+    price: Number(row.price), photo: row.photo, category: row.category,
+    active: row.active, stock: row.stock ?? undefined,
+    variants: variants.length > 0 ? variants : undefined,
   };
 }
 
 function mapClient(row: any): Client {
-  return {
-    id: row.id,
-    name: row.name,
-    phone: row.phone,
-    notes: row.notes,
-    createdAt: row.created_at,
-  };
+  return { id: row.id, name: row.name, phone: row.phone, notes: row.notes, createdAt: row.created_at };
 }
 
 function mapSale(row: any, items: SaleItem[]): Sale {
   return {
-    id: row.id,
-    clientId: row.client_id,
-    items,
-    total: Number(row.total),
-    orderDate: row.order_date,
-    deliveryDate: row.delivery_date || '',
-    status: row.status,
-    notes: row.notes,
+    id: row.id, clientId: row.client_id, items, total: Number(row.total),
+    orderDate: row.order_date, deliveryDate: row.delivery_date || '',
+    status: row.status, notes: row.notes,
   };
 }
 
 function mapSaleItem(row: any): SaleItem {
   return {
-    id: row.id,
-    productId: row.product_id,
-    quantity: row.quantity,
-    unitPrice: Number(row.unit_price),
-    subtotal: Number(row.subtotal),
+    id: row.id, productId: row.product_id, quantity: row.quantity,
+    unitPrice: Number(row.unit_price), subtotal: Number(row.subtotal),
+    variantId: row.variant_id || undefined, variantName: row.variant_name || undefined,
   };
 }
 
@@ -86,21 +70,26 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const fetchAll = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
-    const [prodRes, clientRes, saleRes, itemRes] = await Promise.all([
+    const [prodRes, variantRes, clientRes, saleRes, itemRes] = await Promise.all([
       supabase.from('products').select('*').order('created_at', { ascending: false }),
+      supabase.from('product_variants').select('*'),
       supabase.from('clients').select('*').order('created_at', { ascending: false }),
       supabase.from('sales').select('*').order('order_date', { ascending: false }),
       supabase.from('sale_items').select('*'),
     ]);
 
-    setProducts((prodRes.data || []).map(mapProduct));
+    const allVariants = (variantRes.data || []).map(mapVariant);
+    setProducts((prodRes.data || []).map(row => {
+      const pvs = allVariants.filter(v => v.productId === row.id);
+      return mapProduct(row, pvs);
+    }));
     setClients((clientRes.data || []).map(mapClient));
 
     const allItems = (itemRes.data || []).map(mapSaleItem);
+    const rawItems = itemRes.data || [];
     const salesData = (saleRes.data || []).map(row => {
       const items = allItems.filter(i => {
-        // sale_id is on the raw row, but mapSaleItem doesn't have it
-        const rawItem = (itemRes.data || []).find(r => r.id === i.id);
+        const rawItem = rawItems.find(r => r.id === i.id);
         return rawItem?.sale_id === row.id;
       });
       return mapSale(row, items);
@@ -111,20 +100,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetchAll(true);
-
     const channel = supabase
       .channel('store-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => fetchAll(false))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'product_variants' }, () => fetchAll(false))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => fetchAll(false))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, () => fetchAll(false))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sale_items' }, () => fetchAll(false))
       .subscribe();
 
-    // Re-sync when tab/app regains focus (mobile browsers kill websockets in background)
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        fetchAll(false);
-      }
+      if (document.visibilityState === 'visible') fetchAll(false);
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', () => fetchAll(false));
@@ -139,16 +125,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // Products
   const addProduct = useCallback(async (p: Omit<Product, 'id'>) => {
     const { data, error } = await supabase.from('products').insert({
-      name: p.name,
-      description: p.description,
-      price: p.price,
-      photo: p.photo,
-      category: p.category,
-      active: p.active,
-      stock: p.stock ?? null,
+      name: p.name, description: p.description, price: p.price,
+      photo: p.photo, category: p.category, active: p.active, stock: p.stock ?? null,
     }).select().single();
-    if (data) setProducts(prev => [mapProduct(data), ...prev]);
-  }, []);
+    if (!data) return;
+
+    if (p.variants && p.variants.length > 0) {
+      const variantsToInsert = p.variants.map(v => ({
+        product_id: data.id, name: v.name, price: v.price,
+      }));
+      await supabase.from('product_variants').insert(variantsToInsert);
+    }
+    await fetchAll(false);
+  }, [fetchAll]);
 
   const updateProduct = useCallback(async (id: string, p: Partial<Product>) => {
     const update: any = {};
@@ -160,9 +149,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (p.active !== undefined) update.active = p.active;
     if (p.stock !== undefined) update.stock = p.stock;
 
-    const { data } = await supabase.from('products').update(update).eq('id', id).select().single();
-    if (data) setProducts(prev => prev.map(item => item.id === id ? mapProduct(data) : item));
-  }, []);
+    await supabase.from('products').update(update).eq('id', id);
+
+    if (p.variants !== undefined) {
+      await supabase.from('product_variants').delete().eq('product_id', id);
+      if (p.variants.length > 0) {
+        const variantsToInsert = p.variants.map(v => ({
+          product_id: id, name: v.name, price: v.price,
+        }));
+        await supabase.from('product_variants').insert(variantsToInsert);
+      }
+    }
+    await fetchAll(false);
+  }, [fetchAll]);
 
   const deleteProduct = useCallback(async (id: string) => {
     await supabase.from('products').delete().eq('id', id);
@@ -174,9 +173,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // Clients
   const addClient = useCallback(async (c: Omit<Client, 'id' | 'createdAt'>) => {
     const { data } = await supabase.from('clients').insert({
-      name: c.name,
-      phone: c.phone,
-      notes: c.notes,
+      name: c.name, phone: c.phone, notes: c.notes,
     }).select().single();
     if (data) setClients(prev => [mapClient(data), ...prev]);
   }, []);
@@ -186,7 +183,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (c.name !== undefined) update.name = c.name;
     if (c.phone !== undefined) update.phone = c.phone;
     if (c.notes !== undefined) update.notes = c.notes;
-
     const { data } = await supabase.from('clients').update(update).eq('id', id).select().single();
     if (data) setClients(prev => prev.map(item => item.id === id ? mapClient(data) : item));
   }, []);
@@ -201,38 +197,27 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // Sales
   const addSale = useCallback(async (s: Omit<Sale, 'id' | 'orderDate'>) => {
     const { data: saleData } = await supabase.from('sales').insert({
-      client_id: s.clientId,
-      total: s.total,
-      delivery_date: s.deliveryDate || null,
-      status: s.status,
-      notes: s.notes,
+      client_id: s.clientId, total: s.total,
+      delivery_date: s.deliveryDate || null, status: s.status, notes: s.notes,
     }).select().single();
-
     if (!saleData) return;
 
-    // Insert sale items
     const itemsToInsert = s.items.map(item => ({
-      sale_id: saleData.id,
-      product_id: item.productId,
-      quantity: item.quantity,
-      unit_price: item.unitPrice,
-      subtotal: item.subtotal,
+      sale_id: saleData.id, product_id: item.productId,
+      quantity: item.quantity, unit_price: item.unitPrice, subtotal: item.subtotal,
+      variant_id: item.variantId || null, variant_name: item.variantName || null,
     }));
+    await supabase.from('sale_items').insert(itemsToInsert);
 
-    const { data: itemsData } = await supabase.from('sale_items').insert(itemsToInsert).select();
-    const mappedItems = (itemsData || []).map(mapSaleItem);
-    setSales(prev => [mapSale(saleData, mappedItems), ...prev]);
-
-    // Decrease stock
     for (const item of s.items) {
       const product = products.find(p => p.id === item.productId);
       if (product && product.stock !== undefined) {
         const newStock = Math.max(0, product.stock - item.quantity);
         await supabase.from('products').update({ stock: newStock }).eq('id', item.productId);
-        setProducts(prev => prev.map(p => p.id === item.productId ? { ...p, stock: newStock } : p));
       }
     }
-  }, [products]);
+    await fetchAll(false);
+  }, [products, fetchAll]);
 
   const updateSale = useCallback(async (id: string, s: Partial<Sale>) => {
     const update: any = {};
@@ -241,7 +226,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (s.deliveryDate !== undefined) update.delivery_date = s.deliveryDate || null;
     if (s.status !== undefined) update.status = s.status;
     if (s.notes !== undefined) update.notes = s.notes;
-
     const { data } = await supabase.from('sales').update(update).eq('id', id).select().single();
     if (data) {
       setSales(prev => prev.map(item => {

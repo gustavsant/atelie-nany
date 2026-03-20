@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store/useStore';
 import { formatCurrency } from '@/lib/formatters';
-import { CATEGORY_LABELS, ProductCategory, SaleItem } from '@/types';
+import { CATEGORY_LABELS, ProductCategory, Product, SaleItem } from '@/types';
 import { ShoppingBag, Plus, Minus, X, Package, Cake, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +22,7 @@ export default function Storefront() {
   const [deliveryDate, setDeliveryDate] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [variantDialogProduct, setVariantDialogProduct] = useState<Product | null>(null);
 
   const activeProducts = useMemo(() =>
     products.filter(p => p.active)
@@ -38,34 +39,67 @@ export default function Storefront() {
   const cartTotal = useMemo(() => cart.reduce((sum, i) => sum + i.subtotal, 0), [cart]);
   const cartCount = useMemo(() => cart.reduce((sum, i) => sum + i.quantity, 0), [cart]);
 
-  function addToCart(productId: string) {
+  function addToCart(productId: string, variantId?: string, variantName?: string, variantPrice?: number) {
     const product = products.find(p => p.id === productId);
     if (!product) return;
+    const price = variantPrice ?? product.price;
+    const cartKey = variantId ? `${productId}__${variantId}` : productId;
+
     setCart(prev => {
-      const existing = prev.find(i => i.productId === productId);
+      const existing = prev.find(i => {
+        const key = i.variantId ? `${i.productId}__${i.variantId}` : i.productId;
+        return key === cartKey;
+      });
       if (existing) {
-        return prev.map(i =>
-          i.productId === productId
-            ? { ...i, quantity: i.quantity + 1, subtotal: (i.quantity + 1) * i.unitPrice }
-            : i
-        );
+        return prev.map(i => {
+          const key = i.variantId ? `${i.productId}__${i.variantId}` : i.productId;
+          if (key === cartKey) {
+            return { ...i, quantity: i.quantity + 1, subtotal: (i.quantity + 1) * i.unitPrice };
+          }
+          return i;
+        });
       }
-      return [...prev, { id: Date.now().toString(36), productId, quantity: 1, unitPrice: product.price, subtotal: product.price }];
+      return [...prev, {
+        id: Date.now().toString(36),
+        productId,
+        quantity: 1,
+        unitPrice: price,
+        subtotal: price,
+        variantId,
+        variantName,
+      }];
     });
-    toast.success(`${product.name} adicionado! 🛒`);
+
+    const displayName = variantName ? `${product.name} (${variantName})` : product.name;
+    toast.success(`${displayName} adicionado! 🛒`);
+    setVariantDialogProduct(null);
   }
 
-  function updateCartQty(productId: string, delta: number) {
+  function handleAddToCartClick(product: Product) {
+    if (product.variants && product.variants.length > 0) {
+      setVariantDialogProduct(product);
+    } else {
+      addToCart(product.id);
+    }
+  }
+
+  function getCartItemKey(item: SaleItem) {
+    return item.variantId ? `${item.productId}__${item.variantId}` : item.productId;
+  }
+
+  function updateCartQty(item: SaleItem, delta: number) {
+    const key = getCartItemKey(item);
     setCart(prev => prev.map(i => {
-      if (i.productId !== productId) return i;
+      if (getCartItemKey(i) !== key) return i;
       const newQty = i.quantity + delta;
       if (newQty <= 0) return null as any;
       return { ...i, quantity: newQty, subtotal: newQty * i.unitPrice };
     }).filter(Boolean));
   }
 
-  function removeFromCart(productId: string) {
-    setCart(prev => prev.filter(i => i.productId !== productId));
+  function removeFromCart(item: SaleItem) {
+    const key = getCartItemKey(item);
+    setCart(prev => prev.filter(i => getCartItemKey(i) !== key));
   }
 
   async function handleCheckout() {
@@ -75,7 +109,6 @@ export default function Storefront() {
 
     setSubmitting(true);
     try {
-      // Find or create client
       let clientId: string;
       const existingClient = clients.find(c =>
         c.phone.replace(/\D/g, '') === customerForm.phone.replace(/\D/g, '') && c.phone.length > 3
@@ -84,22 +117,12 @@ export default function Storefront() {
       if (existingClient) {
         clientId = existingClient.id;
       } else {
-        // addClient updates local state; we need the ID from the newly created client
         await addClient({ name: customerForm.name, phone: customerForm.phone, notes: customerForm.notes });
-        // Wait briefly for the state update
         await new Promise(r => setTimeout(r, 500));
-        // Re-check clients after addClient
-        const updatedClients = clients;
-        const newClient = updatedClients.find(c => c.phone === customerForm.phone);
-        if (!newClient) {
-          // Fallback: fetch the client directly
-          const { supabase } = await import('@/integrations/supabase/client');
-          const { data } = await supabase.from('clients').select('id').eq('phone', customerForm.phone).order('created_at', { ascending: false }).limit(1).single();
-          if (!data) { toast.error('Erro ao registrar cliente'); setSubmitting(false); return; }
-          clientId = data.id;
-        } else {
-          clientId = newClient.id;
-        }
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data } = await supabase.from('clients').select('id').eq('phone', customerForm.phone).order('created_at', { ascending: false }).limit(1).single();
+        if (!data) { toast.error('Erro ao registrar cliente'); setSubmitting(false); return; }
+        clientId = data.id;
       }
 
       await addSale({
@@ -141,15 +164,10 @@ export default function Storefront() {
               <p className="text-[10px] text-muted-foreground">Doces com carinho 🧁</p>
             </div>
           </div>
-          <button
-            onClick={() => setCartOpen(true)}
-            className="relative w-10 h-10 rounded-full bg-sage/10 flex items-center justify-center hover:bg-sage/20 transition-colors"
-          >
+          <button onClick={() => setCartOpen(true)} className="relative w-10 h-10 rounded-full bg-sage/10 flex items-center justify-center hover:bg-sage/20 transition-colors">
             <ShoppingBag className="w-5 h-5 text-sage" strokeWidth={1.5} />
             {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
-                {cartCount}
-              </span>
+              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">{cartCount}</span>
             )}
           </button>
         </div>
@@ -158,9 +176,7 @@ export default function Storefront() {
       {/* Hero */}
       <div className="max-w-5xl mx-auto px-4 pt-8 pb-4">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-          <h2 className="text-2xl md:text-3xl font-display font-semibold">
-            Nossos Produtos 🧁
-          </h2>
+          <h2 className="text-2xl md:text-3xl font-display font-semibold">Nossos Produtos 🧁</h2>
           <p className="text-muted-foreground mt-1 text-sm">Escolha seus favoritos e faça seu pedido!</p>
         </motion.div>
       </div>
@@ -169,30 +185,14 @@ export default function Storefront() {
       <div className="max-w-5xl mx-auto px-4 space-y-3 pb-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
-          <Input
-            placeholder="Buscar produto..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-10 bg-card border-border/50 rounded-button"
-          />
+          <Input placeholder="Buscar produto..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10 bg-card border-border/50 rounded-button" />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-          <button
-            onClick={() => setCategoryFilter('all')}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-              categoryFilter === 'all' ? 'bg-sage text-sage-foreground' : 'bg-card text-muted-foreground hover:bg-muted/50'
-            }`}
-          >
+          <button onClick={() => setCategoryFilter('all')} className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${categoryFilter === 'all' ? 'bg-sage text-sage-foreground' : 'bg-card text-muted-foreground hover:bg-muted/50'}`}>
             Todos
           </button>
           {categories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setCategoryFilter(cat)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                categoryFilter === cat ? 'bg-sage text-sage-foreground' : 'bg-card text-muted-foreground hover:bg-muted/50'
-              }`}
-            >
+            <button key={cat} onClick={() => setCategoryFilter(cat)} className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${categoryFilter === cat ? 'bg-sage text-sage-foreground' : 'bg-card text-muted-foreground hover:bg-muted/50'}`}>
               {CATEGORY_LABELS[cat]}
             </button>
           ))}
@@ -209,15 +209,10 @@ export default function Storefront() {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
             {activeProducts.map((product, i) => {
-              const inCart = cart.find(c => c.productId === product.id);
+              const inCartCount = cart.filter(c => c.productId === product.id).reduce((s, c) => s + c.quantity, 0);
               return (
-                <motion.div
-                  key={product.id}
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.03, duration: 0.3 }}
-                  className="bg-card rounded-card shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 overflow-hidden group"
-                >
+                <motion.div key={product.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03, duration: 0.3 }}
+                  className="bg-card rounded-card shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 overflow-hidden group">
                   <div className="aspect-square bg-muted/50 relative overflow-hidden">
                     {product.photo ? (
                       <img src={product.photo} alt={product.name} className="w-full h-full object-cover" />
@@ -226,26 +221,23 @@ export default function Storefront() {
                         <Package className="w-10 h-10 text-muted-foreground/30" strokeWidth={1.5} />
                       </div>
                     )}
-                    {inCart && (
-                      <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shadow-sm">
-                        {inCart.quantity}
-                      </div>
+                    {inCartCount > 0 && (
+                      <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shadow-sm">{inCartCount}</div>
                     )}
                   </div>
                   <div className="p-3">
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                      {CATEGORY_LABELS[product.category]}
-                    </span>
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{CATEGORY_LABELS[product.category]}</span>
                     <p className="font-medium text-sm mt-0.5 truncate">{product.name}</p>
-                    {product.description && (
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{product.description}</p>
-                    )}
+                    {product.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{product.description}</p>}
                     <div className="flex items-center justify-between mt-2">
-                      <p className="text-primary font-semibold text-sm tabular-nums">{formatCurrency(product.price)}</p>
-                      <button
-                        onClick={() => addToCart(product.id)}
-                        className="w-8 h-8 rounded-full bg-sage text-sage-foreground flex items-center justify-center shadow-sm hover:shadow-md active:scale-95 transition-all"
-                      >
+                      <div>
+                        <p className="text-primary font-semibold text-sm tabular-nums">
+                          {product.variants && product.variants.length > 0
+                            ? `a partir de ${formatCurrency(Math.min(product.price, ...product.variants.map(v => v.price)))}`
+                            : formatCurrency(product.price)}
+                        </p>
+                      </div>
+                      <button onClick={() => handleAddToCartClick(product)} className="w-8 h-8 rounded-full bg-sage text-sage-foreground flex items-center justify-center shadow-sm hover:shadow-md active:scale-95 transition-all">
                         <Plus className="w-4 h-4" strokeWidth={2} />
                       </button>
                     </div>
@@ -260,16 +252,8 @@ export default function Storefront() {
       {/* Floating Cart Bar */}
       <AnimatePresence>
         {cartCount > 0 && (
-          <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-4 left-4 right-4 z-40 max-w-lg mx-auto"
-          >
-            <button
-              onClick={() => setCartOpen(true)}
-              className="w-full flex items-center justify-between bg-sage text-sage-foreground rounded-card px-5 py-4 shadow-fab"
-            >
+          <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} className="fixed bottom-4 left-4 right-4 z-40 max-w-lg mx-auto">
+            <button onClick={() => setCartOpen(true)} className="w-full flex items-center justify-between bg-sage text-sage-foreground rounded-card px-5 py-4 shadow-fab">
               <div className="flex items-center gap-3">
                 <ShoppingBag className="w-5 h-5" strokeWidth={1.5} />
                 <span className="font-medium text-sm">{cartCount} {cartCount === 1 ? 'item' : 'itens'}</span>
@@ -279,6 +263,38 @@ export default function Storefront() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Variant Selection Dialog */}
+      <Dialog open={!!variantDialogProduct} onOpenChange={open => { if (!open) setVariantDialogProduct(null); }}>
+        <DialogContent className="sm:max-w-sm rounded-card border-border/50">
+          <DialogHeader>
+            <DialogTitle className="font-display">Escolha a versão</DialogTitle>
+          </DialogHeader>
+          {variantDialogProduct && (
+            <div className="space-y-2 mt-2">
+              {/* Base product option */}
+              <button
+                onClick={() => addToCart(variantDialogProduct.id)}
+                className="w-full flex items-center justify-between p-3 rounded-button border border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-all"
+              >
+                <span className="text-sm font-medium">{variantDialogProduct.name}</span>
+                <span className="text-sm font-semibold text-primary tabular-nums">{formatCurrency(variantDialogProduct.price)}</span>
+              </button>
+              {/* Variant options */}
+              {variantDialogProduct.variants?.map(v => (
+                <button
+                  key={v.id}
+                  onClick={() => addToCart(variantDialogProduct.id, v.id, v.name, v.price)}
+                  className="w-full flex items-center justify-between p-3 rounded-button border border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-all"
+                >
+                  <span className="text-sm font-medium">{v.name}</span>
+                  <span className="text-sm font-semibold text-primary tabular-nums">{formatCurrency(v.price)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Cart Drawer */}
       <Dialog open={cartOpen} onOpenChange={setCartOpen}>
@@ -299,26 +315,21 @@ export default function Storefront() {
             <div className="space-y-3">
               {cart.map(item => {
                 const product = products.find(p => p.id === item.productId);
+                const displayName = item.variantName ? `${product?.name} (${item.variantName})` : product?.name;
                 return (
-                  <div key={item.productId} className="flex items-center gap-3 bg-muted/30 rounded-button p-3">
+                  <div key={getCartItemKey(item)} className="flex items-center gap-3 bg-muted/30 rounded-button p-3">
                     {product?.photo && (
-                      <img src={product.photo} alt={product?.name} className="w-12 h-12 rounded-lg object-cover" />
+                      <img src={product.photo} alt={displayName} className="w-12 h-12 rounded-lg object-cover" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{product?.name}</p>
+                      <p className="text-sm font-medium truncate">{displayName}</p>
                       <p className="text-xs text-muted-foreground tabular-nums">{formatCurrency(item.unitPrice)} cada</p>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <button onClick={() => updateCartQty(item.productId, -1)} className="w-7 h-7 rounded-full bg-card flex items-center justify-center">
-                        <Minus className="w-3 h-3" />
-                      </button>
+                      <button onClick={() => updateCartQty(item, -1)} className="w-7 h-7 rounded-full bg-card flex items-center justify-center"><Minus className="w-3 h-3" /></button>
                       <span className="text-sm font-medium tabular-nums w-5 text-center">{item.quantity}</span>
-                      <button onClick={() => updateCartQty(item.productId, 1)} className="w-7 h-7 rounded-full bg-card flex items-center justify-center">
-                        <Plus className="w-3 h-3" />
-                      </button>
-                      <button onClick={() => removeFromCart(item.productId)} className="w-7 h-7 rounded-full hover:bg-destructive/10 flex items-center justify-center ml-1">
-                        <X className="w-3.5 h-3.5 text-destructive" />
-                      </button>
+                      <button onClick={() => updateCartQty(item, 1)} className="w-7 h-7 rounded-full bg-card flex items-center justify-center"><Plus className="w-3 h-3" /></button>
+                      <button onClick={() => removeFromCart(item)} className="w-7 h-7 rounded-full hover:bg-destructive/10 flex items-center justify-center ml-1"><X className="w-3.5 h-3.5 text-destructive" /></button>
                     </div>
                   </div>
                 );
@@ -329,10 +340,7 @@ export default function Storefront() {
                 <span className="text-lg font-semibold tabular-nums text-primary">{formatCurrency(cartTotal)}</span>
               </div>
 
-              <button
-                onClick={() => { setCartOpen(false); setCheckoutOpen(true); }}
-                className="w-full py-3 bg-sage text-sage-foreground rounded-button font-medium text-sm shadow-soft hover:shadow-card-hover transition-all"
-              >
+              <button onClick={() => { setCartOpen(false); setCheckoutOpen(true); }} className="w-full py-3 bg-sage text-sage-foreground rounded-button font-medium text-sm shadow-soft hover:shadow-card-hover transition-all">
                 Finalizar Pedido
               </button>
             </div>
@@ -352,9 +360,10 @@ export default function Storefront() {
               <p className="text-xs text-muted-foreground font-medium">Resumo</p>
               {cart.map(item => {
                 const product = products.find(p => p.id === item.productId);
+                const displayName = item.variantName ? `${product?.name} (${item.variantName})` : product?.name;
                 return (
-                  <div key={item.productId} className="flex justify-between text-sm">
-                    <span>{item.quantity}x {product?.name}</span>
+                  <div key={getCartItemKey(item)} className="flex justify-between text-sm">
+                    <span>{item.quantity}x {displayName}</span>
                     <span className="tabular-nums font-medium">{formatCurrency(item.subtotal)}</span>
                   </div>
                 );
@@ -367,47 +376,22 @@ export default function Storefront() {
 
             <div>
               <Label>Seu nome *</Label>
-              <Input
-                value={customerForm.name}
-                onChange={e => setCustomerForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="Maria Silva"
-                className="mt-1 rounded-button"
-              />
+              <Input value={customerForm.name} onChange={e => setCustomerForm(f => ({ ...f, name: e.target.value }))} placeholder="Maria Silva" className="mt-1 rounded-button" />
             </div>
             <div>
               <Label>Telefone / WhatsApp *</Label>
-              <Input
-                value={customerForm.phone}
-                onChange={e => setCustomerForm(f => ({ ...f, phone: e.target.value }))}
-                placeholder="(11) 99999-9999"
-                className="mt-1 rounded-button"
-              />
+              <Input value={customerForm.phone} onChange={e => setCustomerForm(f => ({ ...f, phone: e.target.value }))} placeholder="(11) 99999-9999" className="mt-1 rounded-button" />
             </div>
             <div>
               <Label>Data de entrega desejada</Label>
-              <Input
-                type="date"
-                value={deliveryDate}
-                onChange={e => setDeliveryDate(e.target.value)}
-                className="mt-1 rounded-button"
-              />
+              <Input type="date" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)} className="mt-1 rounded-button" />
             </div>
             <div>
               <Label>Observações do pedido</Label>
-              <Textarea
-                value={orderNotes}
-                onChange={e => setOrderNotes(e.target.value)}
-                placeholder="Ex: sem glúten, entregar à tarde..."
-                className="mt-1 rounded-button resize-none"
-                rows={2}
-              />
+              <Textarea value={orderNotes} onChange={e => setOrderNotes(e.target.value)} placeholder="Ex: sem glúten, entregar à tarde..." className="mt-1 rounded-button resize-none" rows={2} />
             </div>
 
-            <button
-              onClick={handleCheckout}
-              disabled={submitting}
-              className="w-full py-3 bg-sage text-sage-foreground rounded-button font-medium text-sm shadow-soft hover:shadow-card-hover disabled:opacity-50 transition-all"
-            >
+            <button onClick={handleCheckout} disabled={submitting} className="w-full py-3 bg-sage text-sage-foreground rounded-button font-medium text-sm shadow-soft hover:shadow-card-hover disabled:opacity-50 transition-all">
               {submitting ? 'Enviando pedido...' : 'Enviar Pedido 🎉'}
             </button>
           </div>

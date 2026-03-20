@@ -10,7 +10,7 @@ interface ReceiptData {
   orderDate: string;
   deliveryDate: string | null;
   notes: string;
-  items: { name: string; quantity: number; unitPrice: number; subtotal: number }[];
+  items: { name: string; variantName?: string; quantity: number; unitPrice: number; subtotal: number }[];
   total: number;
 }
 
@@ -37,6 +37,7 @@ export default function OrderReceipt() {
         notes: sale.notes,
         items: (items || []).map((i: any) => ({
           name: i.products?.name || 'Produto',
+          variantName: i.variant_name || undefined,
           quantity: i.quantity,
           unitPrice: Number(i.unit_price),
           subtotal: Number(i.subtotal),
@@ -64,87 +65,25 @@ export default function OrderReceipt() {
     <>
       <style>{`
         @media print {
-          @page {
-            size: 58mm auto;
-            margin: 2mm;
-          }
+          @page { size: 58mm auto; margin: 2mm; }
           body { margin: 0; padding: 0; }
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #fff; }
-        .receipt {
-          width: 58mm;
-          margin: 0 auto;
-          padding: 3mm;
-          font-family: 'Courier New', monospace;
-          font-size: 10px;
-          color: #000;
-          line-height: 1.4;
-        }
-        .receipt-header {
-          text-align: center;
-          border-bottom: 1px dashed #000;
-          padding-bottom: 6px;
-          margin-bottom: 6px;
-        }
-        .receipt-logo {
-          font-size: 14px;
-          font-weight: bold;
-          letter-spacing: 1px;
-        }
-        .receipt-sub {
-          font-size: 8px;
-          color: #555;
-          margin-top: 2px;
-        }
-        .receipt-divider {
-          border: none;
-          border-top: 1px dashed #000;
-          margin: 6px 0;
-        }
-        .receipt-row {
-          display: flex;
-          justify-content: space-between;
-          gap: 4px;
-        }
-        .receipt-label {
-          font-size: 8px;
-          color: #555;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        .receipt-value {
-          font-size: 10px;
-          font-weight: bold;
-        }
-        .item-row {
-          margin-bottom: 4px;
-        }
-        .item-name {
-          font-size: 10px;
-        }
-        .item-detail {
-          display: flex;
-          justify-content: space-between;
-          font-size: 9px;
-          color: #333;
-        }
-        .receipt-total {
-          text-align: right;
-          font-size: 14px;
-          font-weight: bold;
-          padding-top: 4px;
-          border-top: 2px solid #000;
-          margin-top: 4px;
-        }
-        .receipt-footer {
-          text-align: center;
-          font-size: 8px;
-          color: #555;
-          margin-top: 8px;
-          padding-top: 6px;
-          border-top: 1px dashed #000;
-        }
+        .receipt { width: 58mm; margin: 0 auto; padding: 3mm; font-family: 'Courier New', monospace; font-size: 10px; color: #000; line-height: 1.4; }
+        .receipt-header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px; }
+        .receipt-logo { font-size: 14px; font-weight: bold; letter-spacing: 1px; }
+        .receipt-sub { font-size: 8px; color: #555; margin-top: 2px; }
+        .receipt-divider { border: none; border-top: 1px dashed #000; margin: 6px 0; }
+        .receipt-row { display: flex; justify-content: space-between; gap: 4px; }
+        .receipt-label { font-size: 8px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+        .receipt-value { font-size: 10px; font-weight: bold; }
+        .item-row { margin-bottom: 4px; }
+        .item-name { font-size: 10px; }
+        .item-variant { font-size: 8px; color: #555; font-style: italic; }
+        .item-detail { display: flex; justify-content: space-between; font-size: 9px; color: #333; }
+        .receipt-total { text-align: right; font-size: 14px; font-weight: bold; padding-top: 4px; border-top: 2px solid #000; margin-top: 4px; }
+        .receipt-footer { text-align: center; font-size: 8px; color: #555; margin-top: 8px; padding-top: 6px; border-top: 1px dashed #000; }
         .no-print { display: block; text-align: center; margin: 10px auto; }
         @media print { .no-print { display: none !important; } }
       `}</style>
@@ -180,6 +119,7 @@ export default function OrderReceipt() {
         {data.items.map((item, idx) => (
           <div key={idx} className="item-row">
             <div className="item-name">{item.name}</div>
+            {item.variantName && <div className="item-variant">↳ {item.variantName}</div>}
             <div className="item-detail">
               <span>{item.quantity}x {formatCurrency(item.unitPrice)}</span>
               <span>{formatCurrency(item.subtotal)}</span>
@@ -187,9 +127,7 @@ export default function OrderReceipt() {
           </div>
         ))}
 
-        <div className="receipt-total">
-          {formatCurrency(data.total)}
-        </div>
+        <div className="receipt-total">{formatCurrency(data.total)}</div>
 
         {data.notes && (
           <>
@@ -199,9 +137,7 @@ export default function OrderReceipt() {
           </>
         )}
 
-        <div className="receipt-footer">
-          Obrigada pela preferência! 💕
-        </div>
+        <div className="receipt-footer">Obrigada pela preferência! 💕</div>
       </div>
     </>
   );

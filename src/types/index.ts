@@ -1,5 +1,12 @@
 export type ProductCategory = 'bolos' | 'doces' | 'kits' | 'encomendas' | 'outros';
 
+export interface ProductVariant {
+  id: string;
+  productId: string;
+  name: string;
+  price: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -9,6 +16,7 @@ export interface Product {
   category: ProductCategory;
   active: boolean;
   stock?: number;
+  variants?: ProductVariant[];
 }
 
 export interface Client {
@@ -27,6 +35,8 @@ export interface SaleItem {
   quantity: number;
   unitPrice: number;
   subtotal: number;
+  variantId?: string;
+  variantName?: string;
 }
 
 export interface Sale {
