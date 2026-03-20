@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import EasterDoodles from '@/components/EasterDoodles';
+import StorefrontDoodles from '@/components/StorefrontDoodles';
 
 export default function Storefront() {
   const { products, addClient, addSale, clients } = useStore();
