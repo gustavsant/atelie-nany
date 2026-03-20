@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import EasterDoodles from '@/components/EasterDoodles';
+import StorefrontDoodles from '@/components/StorefrontDoodles';
 
 export default function Storefront() {
   const { products, addClient, addSale, clients } = useStore();
@@ -126,8 +126,8 @@ export default function Storefront() {
   }
 
   return (
-    <div className="min-h-screen bg-background relative">
-      <EasterDoodles />
+    <div className="min-h-screen relative" style={{ backgroundColor: 'hsl(340, 80%, 96%)' }}>
+      <StorefrontDoodles />
 
       {/* Header */}
       <header className="sticky top-0 z-30 bg-card/95 backdrop-blur-md border-b border-border/50">
