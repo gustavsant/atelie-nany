@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store/useStore';
 import { formatCurrency } from '@/lib/formatters';
@@ -10,6 +10,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import StorefrontDoodles from '@/components/StorefrontDoodles';
+import ProductDetailModal from '@/components/storefront/ProductDetailModal';
+
+const CUSTOMER_STORAGE_KEY = 'atelie_nany_customer';
+
+function loadSavedCustomer() {
+  try {
+    const saved = localStorage.getItem(CUSTOMER_STORAGE_KEY);
+    if (saved) return JSON.parse(saved) as { name: string; phone: string; notes: string; clientId?: string };
+  } catch {}
+  return null;
+}
+
+function saveCustomer(data: { name: string; phone: string; notes: string; clientId?: string }) {
+  localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify(data));
+}
 
 export default function Storefront() {
   const { products, addClient, addSale, clients } = useStore();
@@ -18,11 +33,18 @@ export default function Storefront() {
   const [cart, setCart] = useState<SaleItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [customerForm, setCustomerForm] = useState({ name: '', phone: '', notes: '' });
   const [deliveryDate, setDeliveryDate] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [variantDialogProduct, setVariantDialogProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  const savedCustomer = loadSavedCustomer();
+  const [customerForm, setCustomerForm] = useState({
+    name: savedCustomer?.name || '',
+    phone: savedCustomer?.phone || '',
+    notes: savedCustomer?.notes || '',
+  });
+  const [savedClientId, setSavedClientId] = useState<string | undefined>(savedCustomer?.clientId);
 
   const activeProducts = useMemo(() =>
     products.filter(p => p.active)
@@ -39,48 +61,25 @@ export default function Storefront() {
   const cartTotal = useMemo(() => cart.reduce((sum, i) => sum + i.subtotal, 0), [cart]);
   const cartCount = useMemo(() => cart.reduce((sum, i) => sum + i.quantity, 0), [cart]);
 
-  function addToCart(productId: string, variantId?: string, variantName?: string, variantPrice?: number) {
-    const product = products.find(p => p.id === productId);
-    if (!product) return;
-    const price = variantPrice ?? product.price;
-    const cartKey = variantId ? `${productId}__${variantId}` : productId;
-
+  function addItemsToCart(items: SaleItem[]) {
     setCart(prev => {
-      const existing = prev.find(i => {
-        const key = i.variantId ? `${i.productId}__${i.variantId}` : i.productId;
-        return key === cartKey;
-      });
-      if (existing) {
-        return prev.map(i => {
+      let updated = [...prev];
+      for (const item of items) {
+        const cartKey = item.variantId ? `${item.productId}__${item.variantId}` : item.productId;
+        const existingIdx = updated.findIndex(i => {
           const key = i.variantId ? `${i.productId}__${i.variantId}` : i.productId;
-          if (key === cartKey) {
-            return { ...i, quantity: i.quantity + 1, subtotal: (i.quantity + 1) * i.unitPrice };
-          }
-          return i;
+          return key === cartKey;
         });
+        if (existingIdx >= 0) {
+          const existing = updated[existingIdx];
+          const newQty = existing.quantity + item.quantity;
+          updated[existingIdx] = { ...existing, quantity: newQty, subtotal: newQty * existing.unitPrice };
+        } else {
+          updated.push(item);
+        }
       }
-      return [...prev, {
-        id: Date.now().toString(36),
-        productId,
-        quantity: 1,
-        unitPrice: price,
-        subtotal: price,
-        variantId,
-        variantName,
-      }];
+      return updated;
     });
-
-    const displayName = variantName ? `${product.name} (${variantName})` : product.name;
-    toast.success(`${displayName} adicionado! 🛒`);
-    setVariantDialogProduct(null);
-  }
-
-  function handleAddToCartClick(product: Product) {
-    if (product.variants && product.variants.length > 0) {
-      setVariantDialogProduct(product);
-    } else {
-      addToCart(product.id);
-    }
   }
 
   function getCartItemKey(item: SaleItem) {
@@ -109,14 +108,24 @@ export default function Storefront() {
 
     setSubmitting(true);
     try {
-      let clientId: string;
-      const existingClient = clients.find(c =>
-        c.phone.replace(/\D/g, '') === customerForm.phone.replace(/\D/g, '') && c.phone.length > 3
-      );
+      let clientId = savedClientId;
 
-      if (existingClient) {
-        clientId = existingClient.id;
-      } else {
+      // Check if saved client still exists
+      if (clientId) {
+        const existing = clients.find(c => c.id === clientId);
+        if (!existing) clientId = undefined;
+      }
+
+      // Try to find by phone
+      if (!clientId) {
+        const existingClient = clients.find(c =>
+          c.phone.replace(/\D/g, '') === customerForm.phone.replace(/\D/g, '') && c.phone.length > 3
+        );
+        if (existingClient) clientId = existingClient.id;
+      }
+
+      // Create new client if needed
+      if (!clientId) {
         await addClient({ name: customerForm.name, phone: customerForm.phone, notes: customerForm.notes });
         await new Promise(r => setTimeout(r, 500));
         const { supabase } = await import('@/integrations/supabase/client');
@@ -124,6 +133,10 @@ export default function Storefront() {
         if (!data) { toast.error('Erro ao registrar cliente'); setSubmitting(false); return; }
         clientId = data.id;
       }
+
+      // Save customer data for future orders
+      saveCustomer({ ...customerForm, clientId });
+      setSavedClientId(clientId);
 
       await addSale({
         clientId,
@@ -138,7 +151,6 @@ export default function Storefront() {
       setCart([]);
       setCheckoutOpen(false);
       setCartOpen(false);
-      setCustomerForm({ name: '', phone: '', notes: '' });
       setDeliveryDate('');
       setOrderNotes('');
     } catch {
@@ -147,6 +159,8 @@ export default function Storefront() {
       setSubmitting(false);
     }
   }
+
+  const isReturningCustomer = !!savedClientId;
 
   return (
     <div className="min-h-screen relative" style={{ backgroundColor: 'hsl(340, 80%, 96%)' }}>
@@ -178,6 +192,9 @@ export default function Storefront() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           <h2 className="text-2xl md:text-3xl font-display font-semibold">Nossos Produtos 🧁</h2>
           <p className="text-muted-foreground mt-1 text-sm">Escolha seus favoritos e faça seu pedido!</p>
+          {isReturningCustomer && (
+            <p className="text-xs text-sage mt-1">Bem-vindo(a) de volta, {customerForm.name}! 💚</p>
+          )}
         </motion.div>
       </div>
 
@@ -212,10 +229,11 @@ export default function Storefront() {
               const inCartCount = cart.filter(c => c.productId === product.id).reduce((s, c) => s + c.quantity, 0);
               return (
                 <motion.div key={product.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03, duration: 0.3 }}
-                  className="bg-card rounded-card shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 overflow-hidden group">
+                  onClick={() => setSelectedProduct(product)}
+                  className="bg-card rounded-card shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 overflow-hidden group cursor-pointer">
                   <div className="aspect-square bg-muted/50 relative overflow-hidden">
                     {product.photo ? (
-                      <img src={product.photo} alt={product.name} className="w-full h-full object-cover" />
+                      <img src={product.photo} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <Package className="w-10 h-10 text-muted-foreground/30" strokeWidth={1.5} />
@@ -229,17 +247,12 @@ export default function Storefront() {
                     <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{CATEGORY_LABELS[product.category]}</span>
                     <p className="font-medium text-sm mt-0.5 truncate">{product.name}</p>
                     {product.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{product.description}</p>}
-                    <div className="flex items-center justify-between mt-2">
-                      <div>
-                        <p className="text-primary font-semibold text-sm tabular-nums">
-                          {product.variants && product.variants.length > 0
-                            ? `a partir de ${formatCurrency(Math.min(product.price, ...product.variants.map(v => v.price)))}`
-                            : formatCurrency(product.price)}
-                        </p>
-                      </div>
-                      <button onClick={() => handleAddToCartClick(product)} className="w-8 h-8 rounded-full bg-sage text-sage-foreground flex items-center justify-center shadow-sm hover:shadow-md active:scale-95 transition-all">
-                        <Plus className="w-4 h-4" strokeWidth={2} />
-                      </button>
+                    <div className="mt-2">
+                      <p className="text-primary font-semibold text-sm tabular-nums">
+                        {product.variants && product.variants.length > 0
+                          ? `a partir de ${formatCurrency(Math.min(product.price, ...product.variants.map(v => v.price)))}`
+                          : formatCurrency(product.price)}
+                      </p>
                     </div>
                   </div>
                 </motion.div>
@@ -248,6 +261,14 @@ export default function Storefront() {
           </div>
         )}
       </div>
+
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        product={selectedProduct}
+        open={!!selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onAddToCart={addItemsToCart}
+      />
 
       {/* Floating Cart Bar */}
       <AnimatePresence>
@@ -263,38 +284,6 @@ export default function Storefront() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Variant Selection Dialog */}
-      <Dialog open={!!variantDialogProduct} onOpenChange={open => { if (!open) setVariantDialogProduct(null); }}>
-        <DialogContent className="sm:max-w-sm rounded-card border-border/50">
-          <DialogHeader>
-            <DialogTitle className="font-display">Escolha a versão</DialogTitle>
-          </DialogHeader>
-          {variantDialogProduct && (
-            <div className="space-y-2 mt-2">
-              {/* Base product option */}
-              <button
-                onClick={() => addToCart(variantDialogProduct.id)}
-                className="w-full flex items-center justify-between p-3 rounded-button border border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-all"
-              >
-                <span className="text-sm font-medium">{variantDialogProduct.name}</span>
-                <span className="text-sm font-semibold text-primary tabular-nums">{formatCurrency(variantDialogProduct.price)}</span>
-              </button>
-              {/* Variant options */}
-              {variantDialogProduct.variants?.map(v => (
-                <button
-                  key={v.id}
-                  onClick={() => addToCart(variantDialogProduct.id, v.id, v.name, v.price)}
-                  className="w-full flex items-center justify-between p-3 rounded-button border border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-all"
-                >
-                  <span className="text-sm font-medium">{v.name}</span>
-                  <span className="text-sm font-semibold text-primary tabular-nums">{formatCurrency(v.price)}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Cart Drawer */}
       <Dialog open={cartOpen} onOpenChange={setCartOpen}>
@@ -374,14 +363,34 @@ export default function Storefront() {
               </div>
             </div>
 
-            <div>
-              <Label>Seu nome *</Label>
-              <Input value={customerForm.name} onChange={e => setCustomerForm(f => ({ ...f, name: e.target.value }))} placeholder="Maria Silva" className="mt-1 rounded-button" />
-            </div>
-            <div>
-              <Label>Telefone / WhatsApp *</Label>
-              <Input value={customerForm.phone} onChange={e => setCustomerForm(f => ({ ...f, phone: e.target.value }))} placeholder="(11) 99999-9999" className="mt-1 rounded-button" />
-            </div>
+            {isReturningCustomer && (
+              <div className="bg-sage/10 rounded-button p-3 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">{customerForm.name}</p>
+                  <p className="text-xs text-muted-foreground">{customerForm.phone}</p>
+                </div>
+                <button
+                  onClick={() => { setSavedClientId(undefined); localStorage.removeItem(CUSTOMER_STORAGE_KEY); }}
+                  className="text-xs text-muted-foreground underline hover:text-foreground"
+                >
+                  Não sou eu
+                </button>
+              </div>
+            )}
+
+            {!isReturningCustomer && (
+              <>
+                <div>
+                  <Label>Seu nome *</Label>
+                  <Input value={customerForm.name} onChange={e => setCustomerForm(f => ({ ...f, name: e.target.value }))} placeholder="Maria Silva" className="mt-1 rounded-button" />
+                </div>
+                <div>
+                  <Label>Telefone / WhatsApp *</Label>
+                  <Input value={customerForm.phone} onChange={e => setCustomerForm(f => ({ ...f, phone: e.target.value }))} placeholder="(11) 99999-9999" className="mt-1 rounded-button" />
+                </div>
+              </>
+            )}
+
             <div>
               <Label>Data de entrega desejada</Label>
               <Input type="date" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)} className="mt-1 rounded-button" />
