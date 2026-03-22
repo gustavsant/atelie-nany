@@ -287,7 +287,11 @@ export default function Storefront() {
 
       {/* Cart Drawer */}
       <Dialog open={cartOpen} onOpenChange={setCartOpen}>
-        <DialogContent className="sm:max-w-md rounded-card border-border/50 max-h-[85vh] overflow-y-auto">
+        <DialogContent className="w-[calc(100%-2rem)] max-w-none sm:max-w-[70vw] rounded-card border-border/50 max-h-[85vh] overflow-y-auto [&>button]:hidden sm:[&>button]:flex">
+          {/* Mobile close */}
+          <button onClick={() => setCartOpen(false)} className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-muted/50 flex items-center justify-center sm:hidden">
+            <X className="w-4 h-4" />
+          </button>
           <DialogHeader>
             <DialogTitle className="font-display flex items-center gap-2">
               <ShoppingBag className="w-5 h-5 text-sage" strokeWidth={1.5} />
