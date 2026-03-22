@@ -315,7 +315,7 @@ export default function Storefront() {
                       <img src={product.photo} alt={displayName} className="w-12 h-12 rounded-lg object-cover" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{displayName}</p>
+                      <p className="text-sm font-medium break-words">{displayName}</p>
                       <p className="text-xs text-muted-foreground tabular-nums">{formatCurrency(item.unitPrice)} cada</p>
                     </div>
                     <div className="flex items-center gap-1.5">
