@@ -84,7 +84,7 @@ export default function ProductDetailModal({ product, open, onClose, onAddToCart
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-3xl rounded-card border-border/50 max-h-[90vh] overflow-hidden p-0 [&>button]:hidden">
+      <DialogContent className="sm:max-w-3xl rounded-card border-border/50 max-h-[90vh] overflow-y-auto md:overflow-hidden p-0 [&>button]:hidden">
         {/* Mobile close button */}
         <button
           onClick={onClose}
@@ -93,8 +93,8 @@ export default function ProductDetailModal({ product, open, onClose, onAddToCart
           <X className="w-4 h-4" />
         </button>
 
-        <div className="flex flex-col md:flex-row md:h-[75vh] max-h-[90vh]">
-          {/* Left: Product Image — scrolls away on mobile, fixed on desktop */}
+        <div className="flex flex-col md:flex-row md:h-[75vh]">
+          {/* Left: Product Image — scrolls with content on mobile, fixed on desktop */}
           <div className="md:w-1/2 md:h-full shrink-0 bg-muted/50 relative overflow-hidden">
             {product.photo ? (
               <img src={product.photo} alt={product.name} className="w-full object-cover aspect-square md:aspect-auto md:absolute md:inset-0 md:h-full" />
