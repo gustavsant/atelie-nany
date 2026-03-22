@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Product, SaleItem } from '@/types';
 import { formatCurrency } from '@/lib/formatters';
-import { Package, Plus, Minus, ShoppingBag } from 'lucide-react';
+import { Package, Plus, Minus, ShoppingBag, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ProductDetailModalProps {
@@ -84,14 +84,22 @@ export default function ProductDetailModal({ product, open, onClose, onAddToCart
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-3xl rounded-card border-border/50 max-h-[90vh] overflow-hidden p-0">
+      <DialogContent className="sm:max-w-3xl rounded-card border-border/50 max-h-[90vh] overflow-hidden p-0 [&>button]:hidden">
+        {/* Mobile close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-card/80 backdrop-blur-sm flex items-center justify-center shadow-sm md:hidden"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
         <div className="flex flex-col md:flex-row md:h-[75vh] max-h-[90vh]">
-          {/* Left: Product Image — full height on desktop */}
+          {/* Left: Product Image — scrolls away on mobile, fixed on desktop */}
           <div className="md:w-1/2 md:h-full shrink-0 bg-muted/50 relative overflow-hidden">
             {product.photo ? (
-              <img src={product.photo} alt={product.name} className="w-full h-full object-cover md:absolute md:inset-0 aspect-square md:aspect-auto" />
+              <img src={product.photo} alt={product.name} className="w-full object-cover aspect-square md:aspect-auto md:absolute md:inset-0 md:h-full" />
             ) : (
-              <div className="w-full h-full min-h-[200px] flex items-center justify-center">
+              <div className="w-full min-h-[200px] md:h-full flex items-center justify-center">
                 <Package className="w-16 h-16 text-muted-foreground/30" strokeWidth={1.5} />
               </div>
             )}
@@ -112,12 +120,12 @@ export default function ProductDetailModal({ product, open, onClose, onAddToCart
               <h4 className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
                 {hasVariants ? 'Versão original' : 'Quantidade'}
               </h4>
-              <div className="flex items-center justify-between p-3 rounded-button border border-border/50 bg-muted/20">
-                <div>
-                  <p className="text-sm font-medium">{product.name}</p>
+              <div className="flex items-center justify-between p-3 rounded-button border border-border/50 bg-muted/20 gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium break-words">{product.name}</p>
                   <p className="text-sm font-semibold text-primary tabular-nums">{formatCurrency(product.price)}</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <button onClick={() => setBaseQty(q => Math.max(0, q - 1))} className="w-8 h-8 rounded-full bg-card border border-border/50 flex items-center justify-center hover:bg-muted/50 transition-colors">
                     <Minus className="w-3.5 h-3.5" />
                   </button>
@@ -136,12 +144,12 @@ export default function ProductDetailModal({ product, open, onClose, onAddToCart
                 {product.variants!.map(v => {
                   const qty = variantQtys[v.id] || 0;
                   return (
-                    <div key={v.id} className="flex items-center justify-between p-3 rounded-button border border-border/50 bg-muted/20">
-                      <div>
-                        <p className="text-sm font-medium">{v.name}</p>
+                    <div key={v.id} className="flex items-center justify-between p-3 rounded-button border border-border/50 bg-muted/20 gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium break-words">{v.name}</p>
                         <p className="text-sm font-semibold text-primary tabular-nums">{formatCurrency(v.price)}</p>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                         <button onClick={() => setVariantQtys(prev => ({ ...prev, [v.id]: Math.max(0, (prev[v.id] || 0) - 1) }))} className="w-8 h-8 rounded-full bg-card border border-border/50 flex items-center justify-center hover:bg-muted/50 transition-colors">
                           <Minus className="w-3.5 h-3.5" />
                         </button>

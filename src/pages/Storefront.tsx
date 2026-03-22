@@ -273,13 +273,32 @@ export default function Storefront() {
       {/* Floating Cart Bar */}
       <AnimatePresence>
         {cartCount > 0 && (
-          <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} className="fixed bottom-4 left-4 right-4 z-40 max-w-lg mx-auto">
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{
+              y: 0,
+              opacity: 1,
+              rotate: [0, 0, -2, 2, -2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+              scale: [1, 1, 1.03, 1.03, 1.03, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            }}
+            transition={{
+              y: { duration: 0.4 },
+              opacity: { duration: 0.4 },
+              rotate: { duration: 4, repeat: Infinity, ease: "easeInOut" },
+              scale: { duration: 4, repeat: Infinity, ease: "easeInOut" },
+            }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-4 left-4 right-4 z-40 max-w-lg mx-auto"
+          >
             <button onClick={() => setCartOpen(true)} className="w-full flex items-center justify-between bg-sage text-sage-foreground rounded-card px-5 py-4 shadow-fab">
               <div className="flex items-center gap-3">
                 <ShoppingBag className="w-5 h-5" strokeWidth={1.5} />
                 <span className="font-medium text-sm">{cartCount} {cartCount === 1 ? 'item' : 'itens'}</span>
               </div>
-              <span className="font-semibold tabular-nums">{formatCurrency(cartTotal)}</span>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold tabular-nums">{formatCurrency(cartTotal)}</span>
+                <span className="text-xs opacity-80">• Finalizar pedido</span>
+              </div>
             </button>
           </motion.div>
         )}
