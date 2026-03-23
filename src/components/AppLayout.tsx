@@ -16,6 +16,9 @@ import {
   LogOut,
 } from 'lucide-react';
 import EasterDoodles from './EasterDoodles';
+import NanyAvatar from '@/assets/nany-avatar.png';
+import Logo from '@/assets/atelie-logo.png';
+
 
 const navItems = [
   { label: 'Início', icon: LayoutDashboard, path: '/admin' },
@@ -42,15 +45,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex relative">
       <EasterDoodles />
+      <img src={NanyAvatar} alt="Nany Souza" className="hidden xl:flex fixed -bottom-6 right-0 h-64 rounded-full" />
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-64 border-r border-border/50 bg-card/50 backdrop-blur-sm">
         <div className="p-6 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-sage/20 flex items-center justify-center">
-            <Cake className="w-5 h-5 text-sage" strokeWidth={1.5} />
-          </div>
           <div>
-            <h1 className="font-display text-lg font-semibold leading-tight">Ateliê</h1>
-            <p className="text-xs text-muted-foreground font-body">Nany Souza</p>
+            <img src={Logo} alt="Ateliê Nany" className=" h-24 object-contain" />
+
           </div>
         </div>
 
@@ -61,11 +62,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-button text-sm font-medium transition-all duration-200 ${
-                  active
+                className={`flex items-center gap-3 px-4 py-3 rounded-button text-sm font-medium transition-all duration-200 ${active
                     ? 'bg-primary/15 text-foreground shadow-sm'
                     : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-                }`}
+                  }`}
               >
                 <item.icon className="w-5 h-5" strokeWidth={1.5} />
                 {item.label}
@@ -135,11 +135,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         key={item.path}
                         to={item.path}
                         onClick={() => setSidebarOpen(false)}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-button text-sm font-medium transition-all ${
-                          active
+                        className={`flex items-center gap-3 px-4 py-3 rounded-button text-sm font-medium transition-all ${active
                             ? 'bg-primary/15 text-foreground'
                             : 'text-muted-foreground hover:bg-muted/50'
-                        }`}
+                          }`}
                       >
                         <item.icon className="w-5 h-5" strokeWidth={1.5} />
                         {item.label}
@@ -166,9 +165,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex flex-col items-center gap-0.5 py-2 px-3 rounded-lg text-xs transition-colors ${
-                    active ? 'text-foreground' : 'text-muted-foreground'
-                  }`}
+                  className={`flex flex-col items-center gap-0.5 py-2 px-3 rounded-lg text-xs transition-colors ${active ? 'text-foreground' : 'text-muted-foreground'
+                    }`}
                 >
                   <item.icon className="w-5 h-5" strokeWidth={active ? 2 : 1.5} />
                   <span className="font-medium">{item.label}</span>

@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import StorefrontDoodles from '@/components/StorefrontDoodles';
 import ProductDetailModal from '@/components/storefront/ProductDetailModal';
+import Logo from '@/assets/atelie-logo.png';
 
 const CUSTOMER_STORAGE_KEY = 'atelie_nany_customer';
 
@@ -168,14 +169,10 @@ export default function Storefront() {
 
       {/* Header */}
       <header className="sticky top-0 z-30 bg-card/95 backdrop-blur-md border-b border-border/50">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-full bg-sage/20 flex items-center justify-center">
-              <Cake className="w-5 h-5 text-sage" strokeWidth={1.5} />
-            </div>
+        <div className="max-w-5xl mx-auto px-4 flex items-center justify-between">
+          <div className="flex py-4 items-center gap-2">
             <div>
-              <h1 className="font-display text-base font-semibold leading-tight">Ateliê Nany Souza</h1>
-              <p className="text-[10px] text-muted-foreground">Doces com carinho 🧁</p>
+              <img src={Logo} alt="Ateliê Nany" className=" h-24 object-contain" />
             </div>
           </div>
           <button onClick={() => setCartOpen(true)} className="relative w-10 h-10 rounded-full bg-sage/10 flex items-center justify-center hover:bg-sage/20 transition-colors">

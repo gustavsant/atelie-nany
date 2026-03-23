@@ -4,6 +4,9 @@
   padding: 2rem;
   text-align: center;
 }
+#lovable-badge {
+  display: hidden !important;
+}
 
 .logo {
   height: 6em;
