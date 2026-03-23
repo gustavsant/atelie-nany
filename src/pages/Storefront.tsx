@@ -13,7 +13,7 @@ import StorefrontDoodles from '@/components/StorefrontDoodles';
 import ProductDetailModal from '@/components/storefront/ProductDetailModal';
 import Logo from '@/assets/atelie-logo.png';
 
-const CUSTOMER_STORAGE_KEY = 'atelie_nany_customer';
+const CUSTOMER_STORAGE_KEY = "atelie_nany_customer";
 
 function loadSavedCustomer() {
   try {
